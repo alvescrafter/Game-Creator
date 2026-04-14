@@ -106,6 +106,8 @@
   let conversationHistory = []; // for refine feature
   let lastGeneratedCode = '';
   let isGenerating = false;
+  let promptLocked = true; // prompt is locked by default
+  let customPromptText = ''; // stores manually edited prompt when unlocked
 
   // ═══════════════════════════════════════════════
   // UTILITY FUNCTIONS
@@ -323,8 +325,27 @@
   }
 
   function getFullPromptText() {
+    // If prompt is unlocked and has custom text, use that
+    if (!promptLocked && customPromptText) {
+      return customPromptText;
+    }
     const { systemPrompt, userPrompt } = assemblePrompt();
     return `=== SYSTEM PROMPT ===\n${systemPrompt}\n\n=== USER PROMPT ===\n${userPrompt}`;
+  }
+
+  // Returns { systemPrompt, userPrompt } for generation,
+  // respecting custom edits when prompt is unlocked
+  function getPromptForGeneration() {
+    if (!promptLocked && customPromptText) {
+      // Parse custom text back into system/user sections
+      const sysMatch = customPromptText.match(/=== SYSTEM PROMPT ===\n([\s\S]*?)\n=== USER PROMPT ===/);
+      const userMatch = customPromptText.match(/=== USER PROMPT ===\n([\s\S]*)/);
+      return {
+        systemPrompt: sysMatch ? sysMatch[1].trim() : 'You are an expert Game Developer.',
+        userPrompt: userMatch ? userMatch[1].trim() : customPromptText,
+      };
+    }
+    return assemblePrompt();
   }
 
   // ═══════════════════════════════════════════════
@@ -521,7 +542,7 @@
     document.getElementById('btn-generate').disabled = true;
 
     try {
-      const { systemPrompt, userPrompt } = assemblePrompt();
+      const { systemPrompt, userPrompt } = getPromptForGeneration();
 
       // Build conversation
       conversationHistory = [
@@ -857,7 +878,19 @@
 
   function updatePromptPreview() {
     const preview = document.getElementById('prompt-preview');
-    preview.textContent = getFullPromptText();
+    if (promptLocked) {
+      // Auto-generated: always refresh from modules
+      preview.textContent = getFullPromptText();
+      preview.contentEditable = 'false';
+    } else {
+      // Unlocked: show custom text (or default if not yet edited)
+      if (!customPromptText) {
+        const { systemPrompt, userPrompt } = assemblePrompt();
+        customPromptText = `=== SYSTEM PROMPT ===\n${systemPrompt}\n\n=== USER PROMPT ===\n${userPrompt}`;
+      }
+      preview.textContent = customPromptText;
+      preview.contentEditable = 'true';
+    }
   }
 
   function updateToneLabel() {
@@ -1159,6 +1192,62 @@
 
     // ── Copy prompt ──
     document.getElementById('btn-copy-prompt').addEventListener('click', copyPrompt);
+
+    // ── Lock/Unlock prompt ──
+    document.getElementById('btn-lock-prompt').addEventListener('click', () => {
+      const btn = document.getElementById('btn-lock-prompt');
+      const preview = document.getElementById('prompt-preview');
+      const warning = document.getElementById('prompt-edit-warning');
+      const resetBtn = document.getElementById('btn-reset-prompt');
+
+      if (promptLocked) {
+        // Unlock: save current auto-generated text as starting point for editing
+        const { systemPrompt, userPrompt } = assemblePrompt();
+        customPromptText = `=== SYSTEM PROMPT ===\n${systemPrompt}\n\n=== USER PROMPT ===\n${userPrompt}`;
+        promptLocked = false;
+        btn.textContent = '🔓 Unlocked';
+        btn.classList.remove('locked');
+        btn.classList.add('unlocked');
+        preview.classList.remove('prompt-locked');
+        preview.classList.add('prompt-unlocked');
+        preview.contentEditable = 'true';
+        preview.textContent = customPromptText;
+        warning.classList.remove('hidden');
+        resetBtn.disabled = false;
+        showToast('Prompt unlocked — edits will affect generation results', 'warning');
+      } else {
+        // Lock: save current edited text and lock
+        customPromptText = preview.textContent;
+        promptLocked = true;
+        btn.textContent = '🔒 Locked';
+        btn.classList.remove('unlocked');
+        btn.classList.add('locked');
+        preview.classList.remove('prompt-unlocked');
+        preview.classList.add('prompt-locked');
+        preview.contentEditable = 'false';
+        warning.classList.add('hidden');
+        resetBtn.disabled = true;
+        showToast('Prompt locked — using your edited version', 'info');
+      }
+    });
+
+    // ── Save prompt edits on input ──
+    document.getElementById('prompt-preview').addEventListener('input', () => {
+      if (!promptLocked) {
+        customPromptText = document.getElementById('prompt-preview').textContent;
+      }
+    });
+
+    // ── Reset prompt to default ──
+    document.getElementById('btn-reset-prompt').addEventListener('click', () => {
+      if (promptLocked) return;
+      customPromptText = '';
+      const { systemPrompt, userPrompt } = assemblePrompt();
+      const defaultText = `=== SYSTEM PROMPT ===\n${systemPrompt}\n\n=== USER PROMPT ===\n${userPrompt}`;
+      document.getElementById('prompt-preview').textContent = defaultText;
+      customPromptText = defaultText;
+      showToast('Prompt reset to auto-generated default', 'success');
+    });
 
     // ── Modal close buttons ──
     document.querySelectorAll('[data-close]').forEach(btn => {

@@ -245,10 +245,16 @@
         <div class="panel-toolbar">
           <span class="panel-title">Assembled Master Prompt</span>
           <div class="toolbar-actions">
+            <button id="btn-lock-prompt" class="btn btn-sm btn-lock" title="Lock/Unlock prompt for editing">🔒 Locked</button>
+            <button id="btn-reset-prompt" class="btn btn-sm btn-danger" title="Reset prompt to auto-generated default" disabled>↩️ Reset</button>
             <button id="btn-copy-prompt" class="btn btn-sm" title="Copy to clipboard">📋 Copy</button>
           </div>
         </div>
-        <pre id="prompt-preview" class="prompt-output"></pre>
+        <div id="prompt-edit-warning" class="prompt-edit-warning hidden">
+          <span class="warning-icon">⚠️</span>
+          <span class="warning-text">Manual edits to the prompt will directly affect generation results. Changes here override the auto-assembled prompt.</span>
+        </div>
+        <pre id="prompt-preview" class="prompt-output prompt-locked"></pre>
       </section>
 
       <!-- Game Sandbox Panel -->
