@@ -35,16 +35,18 @@
       colorBg: '#0a0a1a',
       vfx: '',
     },
-    techStack: {
-      framework: '',
-      singleFile: true,
-      assetHandling: '',
-      maxTokens: 4096,
-    },
     audio: {
       musicMood: '',
       sfx: '',
     },
+  };
+
+  // ── Background Tech Stack Defaults (not shown in UI) ──
+  const TECH_DEFAULTS = {
+    framework: 'Vanilla JS/Canvas',
+    singleFile: true,
+    assetHandling: 'Use placeholder colored rectangles and simple shapes',
+    maxTokens: 100000,
   };
 
   const DEFAULT_API = {
@@ -60,7 +62,6 @@
     coreIdentity: true,
     mechanics: true,
     visuals: true,
-    techStack: true,
     audio: true,
   };
 
@@ -250,23 +251,15 @@
     // ── System Prompt ──
     let systemPrompt = 'You are an expert Game Developer';
 
-    // Add tech stack context if enabled
-    if (enabled.techStack && state.techStack.framework) {
-      systemPrompt += ` proficient in ${state.techStack.framework}`;
-    }
+    // Always include tech stack context in background
+    systemPrompt += ` proficient in ${TECH_DEFAULTS.framework}`;
     systemPrompt += '.';
 
-    // Single file instruction
-    if (enabled.techStack && state.techStack.singleFile) {
-      systemPrompt += '\n\nIMPORTANT: Deliver the ENTIRE game in a SINGLE HTML file including all CSS and JavaScript. Ensure all logic is contained within the file. Do NOT split into separate files.';
-    } else if (enabled.techStack) {
-      systemPrompt += '\n\nYou may split the code into separate files if needed, but provide all files clearly labeled.';
-    }
+    // Always use single file mode
+    systemPrompt += '\n\nIMPORTANT: Deliver the ENTIRE game in a SINGLE HTML file including all CSS and JavaScript. Ensure all logic is contained within the file. Do NOT split into separate files.';
 
-    // Framework instruction
-    if (enabled.techStack && state.techStack.framework) {
-      systemPrompt += `\n\nUse ${state.techStack.framework} for rendering and game logic.`;
-    }
+    // Always include framework instruction
+    systemPrompt += `\n\nUse ${TECH_DEFAULTS.framework} for rendering and game logic.`;
 
     // ── User Prompt: Game Concept ──
     let userPrompt = '';
@@ -305,13 +298,12 @@
       userPrompt += '\n';
     }
 
-    if (enabled.techStack) {
-      userPrompt += '**Technical Instructions:**\n';
-      if (state.techStack.framework) userPrompt += `- Framework: ${state.techStack.framework}\n`;
-      userPrompt += `- Single File: ${state.techStack.singleFile ? 'Yes' : 'No'}\n`;
-      if (state.techStack.assetHandling) userPrompt += `- Asset Handling: ${state.techStack.assetHandling}\n`;
-      userPrompt += '\n';
-    }
+    // Tech stack is always included in background
+    userPrompt += '**Technical Instructions:**\n';
+    userPrompt += `- Framework: ${TECH_DEFAULTS.framework}\n`;
+    userPrompt += `- Single File: Yes\n`;
+    userPrompt += `- Asset Handling: ${TECH_DEFAULTS.assetHandling}\n`;
+    userPrompt += '\n';
 
     if (enabled.audio) {
       userPrompt += '**Audio & Soundscape:**\n';
@@ -341,16 +333,6 @@
 
   function checkConflicts() {
     const conflicts = [];
-
-    // 3D framework + 2D art style
-    if (state.techStack.framework === 'Three.js' && state.visuals.artStyle === 'Pixel Art') {
-      conflicts.push('Three.js is a 3D framework but Pixel Art is typically 2D. Consider using Vanilla JS/Canvas or Phaser.js instead.');
-    }
-
-    // 2D framework + 3D art style
-    if ((state.techStack.framework === 'Phaser.js' || state.techStack.framework === 'Kaboom.js') && state.visuals.artStyle === 'Low-Poly 3D') {
-      conflicts.push(`${state.techStack.framework} is primarily 2D but Low-Poly 3D requires 3D rendering. Consider using Three.js instead.`);
-    }
 
     // Permadeath + Idle (unusual combo)
     if (state.mechanics.tags.includes('Permadeath') && state.coreIdentity.genre === 'Idle') {
@@ -391,7 +373,7 @@
       headers['Authorization'] = `Bearer ${apiSettings.key}`;
     }
 
-    const maxTokens = parseInt(state.techStack.maxTokens) || 4096;
+    const maxTokens = TECH_DEFAULTS.maxTokens;
 
     const body = {
       model: apiSettings.model,
@@ -838,7 +820,6 @@
 
     // Update derived labels
     updateToneLabel();
-    updateSingleFileLabel();
     updateTempLabel();
   }
 
@@ -886,13 +867,6 @@
       : val <= 60 ? 'Balanced'
       : val <= 80 ? 'Bright' : 'Very Bright/Whimsical';
     document.getElementById('tone-label').textContent = label;
-  }
-
-  function updateSingleFileLabel() {
-    const label = document.getElementById('singleFile-label');
-    if (label) {
-      label.textContent = state.techStack.singleFile ? 'Yes — all code in one HTML file' : 'No — separate files allowed';
-    }
   }
 
   function updateTempLabel() {
@@ -1016,7 +990,6 @@
         syncStateFromUI();
         updatePromptPreview();
         updateToneLabel();
-        updateSingleFileLabel();
         saveState();
         displayConflicts();
       });

@@ -192,59 +192,6 @@
         </div>
       </details>
 
-      <!-- Module D: Technical Stack -->
-      <details class="module-card" data-module="techStack" open>
-        <summary class="module-header">
-          <span class="module-icon">💻</span>
-          <span class="module-title">Technical Stack</span>
-          <label class="toggle-wrap" onclick="event.stopPropagation()">
-            <input type="checkbox" class="module-toggle" data-module-key="techStack" checked>
-            <span class="toggle-switch"></span>
-          </label>
-        </summary>
-        <div class="module-body">
-          <button class="module-scroll-top" title="Scroll up">▲</button>
-          <p class="module-desc">Choose the framework, output format, and asset handling.</p>
-
-          <div class="field-group">
-            <label for="framework" class="field-label">Framework</label>
-            <select id="framework" class="field-select" data-path="techStack.framework">
-              <option value="">— Select Framework —</option>
-              <option value="Vanilla JS/Canvas">Vanilla JS / Canvas</option>
-              <option value="Phaser.js">Phaser.js</option>
-              <option value="Three.js">Three.js</option>
-              <option value="Kaboom.js">Kaboom.js</option>
-              <option value="PixiJS">PixiJS</option>
-              <option value="Matter.js">Matter.js (Physics)</option>
-            </select>
-          </div>
-
-          <div class="field-group">
-            <label class="field-label">Single File Mode</label>
-            <div class="toggle-row">
-              <label class="toggle-wrap">
-                <input type="checkbox" id="singleFile" class="field-toggle" data-path="techStack.singleFile" checked>
-                <span class="toggle-switch"></span>
-              </label>
-              <span class="toggle-label" id="singleFile-label">Yes — all code in one HTML file</span>
-            </div>
-          </div>
-
-          <div class="field-group">
-            <label for="assetHandling" class="field-label">Asset Handling</label>
-            <input type="text" id="assetHandling" class="field-input" data-path="techStack.assetHandling"
-                   placeholder='e.g. "Use placeholder colored rectangles"'>
-          </div>
-
-          <div class="field-group">
-            <label for="maxTokens" class="field-label">Max Tokens <span class="field-hint">(API response limit)</span></label>
-            <input type="number" id="maxTokens" class="field-input" data-path="techStack.maxTokens"
-                   value="4096" min="256" max="32768" step="256">
-          </div>
-          <button class="module-scroll-bottom" title="Scroll down">▼</button>
-        </div>
-      </details>
-
       <!-- Module E: Audio & Soundscape -->
       <details class="module-card" data-module="audio">
         <summary class="module-header">
