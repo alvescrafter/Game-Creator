@@ -1,0 +1,1295 @@
+/* ═══════════════════════════════════════════════
+   Game Creator — Prompt Orchestrator
+   app.js — Core Logic
+   ═══════════════════════════════════════════════ */
+
+(function () {
+  'use strict';
+
+  // ── Storage Keys (versioned) ──
+  const KEYS = {
+    STATE: 'gameCreator.state.v1',
+    API: 'gameCreator.api.v1',
+    HISTORY: 'gameCreator.history.v1',
+    TEMPLATES: 'gameCreator.templates.v1',
+  };
+
+  const MAX_HISTORY = 50;
+
+  // ── Default State ──
+  const DEFAULT_STATE = {
+    coreIdentity: {
+      genre: '',
+      theme: '',
+      tone: 50,
+    },
+    mechanics: {
+      tags: [],
+      rules: '',
+      difficulty: '',
+    },
+    visuals: {
+      artStyle: '',
+      colorPrimary: '#6c5ce7',
+      colorSecondary: '#00cec9',
+      colorBg: '#0a0a1a',
+      vfx: '',
+    },
+    techStack: {
+      framework: '',
+      singleFile: true,
+      assetHandling: '',
+      maxTokens: 4096,
+    },
+    audio: {
+      musicMood: '',
+      sfx: '',
+    },
+  };
+
+  const DEFAULT_API = {
+    baseUrl: 'https://api.openai.com/v1',
+    key: '',
+    model: 'gpt-4o',
+    temperature: 0.7,
+    provider: 'openai',
+  };
+
+  // ── Module enabled state (all on by default) ──
+  const DEFAULT_MODULE_ENABLED = {
+    coreIdentity: true,
+    mechanics: true,
+    visuals: true,
+    techStack: true,
+    audio: true,
+  };
+
+  // ── Provider Presets ──
+  const PROVIDER_PRESETS = {
+    openai: {
+      baseUrl: 'https://api.openai.com/v1',
+      models: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-4', 'gpt-3.5-turbo', 'o1-preview', 'o1-mini'],
+      defaultModel: 'gpt-4o',
+      needsKey: true,
+    },
+    gemini: {
+      baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+      models: ['gemini-2.5-pro-preview-03-25', 'gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-1.5-pro', 'gemini-1.5-flash'],
+      defaultModel: 'gemini-2.0-flash',
+      needsKey: true,
+    },
+    claude: {
+      baseUrl: 'https://api.anthropic.com/v1',
+      models: ['claude-sonnet-4-20250514', 'claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022', 'claude-3-opus-20240229'],
+      defaultModel: 'claude-sonnet-4-20250514',
+      needsKey: true,
+    },
+    ollama: {
+      baseUrl: 'http://localhost:11434/v1',
+      models: ['llama3.2', 'llama3.1', 'llama3', 'mistral', 'codellama', 'gemma2', 'phi3', 'qwen2', 'deepseek-coder-v2', 'mixtral'],
+      defaultModel: 'llama3.2',
+      needsKey: false,
+    },
+    lmstudio: {
+      baseUrl: 'http://localhost:1234/v1',
+      models: [], // Populated dynamically from server
+      defaultModel: '',
+      needsKey: false,
+    },
+  };
+
+  // ── App State ──
+  let state = deepClone(DEFAULT_STATE);
+  let apiSettings = deepClone(DEFAULT_API);
+  let moduleEnabled = deepClone(DEFAULT_MODULE_ENABLED);
+  let conversationHistory = []; // for refine feature
+  let lastGeneratedCode = '';
+  let isGenerating = false;
+
+  // ═══════════════════════════════════════════════
+  // UTILITY FUNCTIONS
+  // ═══════════════════════════════════════════════
+
+  function deepClone(obj) {
+    return JSON.parse(JSON.stringify(obj));
+  }
+
+  function uid() {
+    try { return crypto.randomUUID(); }
+    catch { return 'id_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+  }
+
+  function setNestedValue(obj, path, value) {
+    const keys = path.split('.');
+    let current = obj;
+    for (let i = 0; i < keys.length - 1; i++) {
+      if (!current[keys[i]]) current[keys[i]] = {};
+      current = current[keys[i]];
+    }
+    current[keys[keys.length - 1]] = value;
+  }
+
+  function getNestedValue(obj, path) {
+    return path.split('.').reduce((o, k) => (o || {})[k], obj);
+  }
+
+  function formatTimestamp(ts) {
+    const d = new Date(ts);
+    return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  // ═══════════════════════════════════════════════
+  // PERSISTENCE (localStorage)
+  // ═══════════════════════════════════════════════
+
+  function saveState() {
+    try {
+      localStorage.setItem(KEYS.STATE, JSON.stringify({ state, moduleEnabled }));
+    } catch (e) {
+      console.warn('Failed to save state:', e);
+    }
+  }
+
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(KEYS.STATE);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed.state) state = { ...deepClone(DEFAULT_STATE), ...parsed.state };
+        if (parsed.moduleEnabled) moduleEnabled = { ...deepClone(DEFAULT_MODULE_ENABLED), ...parsed.moduleEnabled };
+      }
+    } catch (e) {
+      console.warn('Failed to load state:', e);
+    }
+  }
+
+  function saveApiSettings() {
+    try {
+      localStorage.setItem(KEYS.API, JSON.stringify(apiSettings));
+    } catch (e) {
+      console.warn('Failed to save API settings:', e);
+    }
+  }
+
+  function loadApiSettings() {
+    try {
+      const raw = localStorage.getItem(KEYS.API);
+      if (raw) {
+        apiSettings = { ...deepClone(DEFAULT_API), ...JSON.parse(raw) };
+      }
+    } catch (e) {
+      console.warn('Failed to load API settings:', e);
+    }
+  }
+
+  function readHistory() {
+    try { return JSON.parse(localStorage.getItem(KEYS.HISTORY) || '[]'); }
+    catch { return []; }
+  }
+
+  function writeHistory(list) {
+    // Prune to MAX_HISTORY
+    if (list.length > MAX_HISTORY) list = list.slice(0, MAX_HISTORY);
+    try { localStorage.setItem(KEYS.HISTORY, JSON.stringify(list)); }
+    catch (e) { console.warn('Failed to save history:', e); }
+  }
+
+  function readTemplates() {
+    try { return JSON.parse(localStorage.getItem(KEYS.TEMPLATES) || '[]'); }
+    catch { return []; }
+  }
+
+  function writeTemplates(list) {
+    try { localStorage.setItem(KEYS.TEMPLATES, JSON.stringify(list)); }
+    catch (e) { console.warn('Failed to save templates:', e); }
+  }
+
+  // ═══════════════════════════════════════════════
+  // TOAST NOTIFICATIONS
+  // ═══════════════════════════════════════════════
+
+  function showToast(message, type = 'info', duration = 3000) {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
+    container.appendChild(toast);
+
+    setTimeout(() => {
+      toast.classList.add('fade-out');
+      setTimeout(() => toast.remove(), 300);
+    }, duration);
+  }
+
+  // ═══════════════════════════════════════════════
+  // LOADING OVERLAY
+  // ═══════════════════════════════════════════════
+
+  function showLoading(text = 'Generating your game...') {
+    document.getElementById('loading-text').textContent = text;
+    document.getElementById('loading-overlay').classList.remove('hidden');
+  }
+
+  function hideLoading() {
+    document.getElementById('loading-overlay').classList.add('hidden');
+  }
+
+  // ═══════════════════════════════════════════════
+  // PROMPT ASSEMBLER
+  // ═══════════════════════════════════════════════
+
+  function assemblePrompt() {
+    const parts = [];
+    const enabled = {};
+
+    // Check which modules are enabled
+    document.querySelectorAll('.module-toggle').forEach(cb => {
+      enabled[cb.dataset.moduleKey] = cb.checked;
+    });
+
+    // ── System Prompt ──
+    let systemPrompt = 'You are an expert Game Developer';
+
+    // Add tech stack context if enabled
+    if (enabled.techStack && state.techStack.framework) {
+      systemPrompt += ` proficient in ${state.techStack.framework}`;
+    }
+    systemPrompt += '.';
+
+    // Single file instruction
+    if (enabled.techStack && state.techStack.singleFile) {
+      systemPrompt += '\n\nIMPORTANT: Deliver the ENTIRE game in a SINGLE HTML file including all CSS and JavaScript. Ensure all logic is contained within the file. Do NOT split into separate files.';
+    } else if (enabled.techStack) {
+      systemPrompt += '\n\nYou may split the code into separate files if needed, but provide all files clearly labeled.';
+    }
+
+    // Framework instruction
+    if (enabled.techStack && state.techStack.framework) {
+      systemPrompt += `\n\nUse ${state.techStack.framework} for rendering and game logic.`;
+    }
+
+    // ── User Prompt: Game Concept ──
+    let userPrompt = '';
+
+    if (enabled.coreIdentity) {
+      userPrompt += '**Game Concept:**\n';
+      if (state.coreIdentity.genre) userPrompt += `- Genre: ${state.coreIdentity.genre}\n`;
+      if (state.coreIdentity.theme) userPrompt += `- Setting/Theme: ${state.coreIdentity.theme}\n`;
+      const toneLabel = state.coreIdentity.tone <= 20 ? 'Very Dark/Gritty'
+        : state.coreIdentity.tone <= 40 ? 'Dark'
+        : state.coreIdentity.tone <= 60 ? 'Balanced'
+        : state.coreIdentity.tone <= 80 ? 'Bright' : 'Very Bright/Whimsical';
+      userPrompt += `- Tone: ${toneLabel}\n`;
+      userPrompt += '\n';
+    }
+
+    if (enabled.mechanics) {
+      userPrompt += '**Gameplay Mechanics:**\n';
+      if (state.mechanics.tags.length > 0) {
+        userPrompt += `- Mechanics: ${state.mechanics.tags.join(', ')}\n`;
+      }
+      if (state.mechanics.rules) {
+        userPrompt += `- Specific Rules: ${state.mechanics.rules}\n`;
+      }
+      if (state.mechanics.difficulty) {
+        userPrompt += `- Difficulty Curve: ${state.mechanics.difficulty}\n`;
+      }
+      userPrompt += '\n';
+    }
+
+    if (enabled.visuals) {
+      userPrompt += '**Visual Requirements:**\n';
+      if (state.visuals.artStyle) userPrompt += `- Art Style: ${state.visuals.artStyle}\n`;
+      userPrompt += `- Color Palette: Primary ${state.visuals.colorPrimary}, Secondary ${state.visuals.colorSecondary}, Background ${state.visuals.colorBg}\n`;
+      if (state.visuals.vfx) userPrompt += `- Visual Effects: ${state.visuals.vfx}\n`;
+      userPrompt += '\n';
+    }
+
+    if (enabled.techStack) {
+      userPrompt += '**Technical Instructions:**\n';
+      if (state.techStack.framework) userPrompt += `- Framework: ${state.techStack.framework}\n`;
+      userPrompt += `- Single File: ${state.techStack.singleFile ? 'Yes' : 'No'}\n`;
+      if (state.techStack.assetHandling) userPrompt += `- Asset Handling: ${state.techStack.assetHandling}\n`;
+      userPrompt += '\n';
+    }
+
+    if (enabled.audio) {
+      userPrompt += '**Audio & Soundscape:**\n';
+      if (state.audio.musicMood) userPrompt += `- Music Mood: ${state.audio.musicMood}\n`;
+      if (state.audio.sfx) userPrompt += `- SFX Requirements: ${state.audio.sfx}\n`;
+      userPrompt += '\n';
+    }
+
+    userPrompt += '**Output Requirements:**\n';
+    userPrompt += '- Generate a complete, playable game based on the above specifications.\n';
+    userPrompt += '- Include all necessary HTML, CSS, and JavaScript.\n';
+    userPrompt += '- Make the game immediately playable with no additional setup.\n';
+    userPrompt += '- Add clear visual feedback for all player actions.\n';
+    userPrompt += '- Include a simple HUD showing score/health if applicable.\n';
+
+    return { systemPrompt, userPrompt };
+  }
+
+  function getFullPromptText() {
+    const { systemPrompt, userPrompt } = assemblePrompt();
+    return `=== SYSTEM PROMPT ===\n${systemPrompt}\n\n=== USER PROMPT ===\n${userPrompt}`;
+  }
+
+  // ═══════════════════════════════════════════════
+  // CONFLICT VALIDATION
+  // ═══════════════════════════════════════════════
+
+  function checkConflicts() {
+    const conflicts = [];
+
+    // 3D framework + 2D art style
+    if (state.techStack.framework === 'Three.js' && state.visuals.artStyle === 'Pixel Art') {
+      conflicts.push('Three.js is a 3D framework but Pixel Art is typically 2D. Consider using Vanilla JS/Canvas or Phaser.js instead.');
+    }
+
+    // 2D framework + 3D art style
+    if ((state.techStack.framework === 'Phaser.js' || state.techStack.framework === 'Kaboom.js') && state.visuals.artStyle === 'Low-Poly 3D') {
+      conflicts.push(`${state.techStack.framework} is primarily 2D but Low-Poly 3D requires 3D rendering. Consider using Three.js instead.`);
+    }
+
+    // Permadeath + Idle (unusual combo)
+    if (state.mechanics.tags.includes('Permadeath') && state.coreIdentity.genre === 'Idle') {
+      conflicts.push('Permadeath in an Idle game can be frustrating. Consider removing one or the other.');
+    }
+
+    return conflicts;
+  }
+
+  function displayConflicts() {
+    // Remove existing warnings
+    document.querySelectorAll('.conflict-warning').forEach(el => el.remove());
+
+    const conflicts = checkConflicts();
+    if (conflicts.length === 0) return;
+
+    const sidebar = document.getElementById('sidebar');
+    conflicts.forEach(msg => {
+      const div = document.createElement('div');
+      div.className = 'conflict-warning';
+      div.textContent = msg;
+      sidebar.insertBefore(div, sidebar.firstChild);
+    });
+  }
+
+  // ═══════════════════════════════════════════════
+  // API CLIENT
+  // ═══════════════════════════════════════════════
+
+  async function callLLM(messages) {
+    const baseUrl = apiSettings.baseUrl.replace(/\/+$/, ''); // trim trailing slash
+    const endpoint = `${baseUrl}/chat/completions`;
+
+    const headers = {
+      'Content-Type': 'application/json',
+    };
+    if (apiSettings.key) {
+      headers['Authorization'] = `Bearer ${apiSettings.key}`;
+    }
+
+    const maxTokens = parseInt(state.techStack.maxTokens) || 4096;
+
+    const body = {
+      model: apiSettings.model,
+      messages,
+      temperature: parseFloat(apiSettings.temperature) || 0.7,
+      max_tokens: maxTokens,
+    };
+
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      const errText = await res.text().catch(() => 'Unknown error');
+      throw new Error(`API Error ${res.status}: ${errText}`);
+    }
+
+    const data = await res.json();
+    const content = data.choices?.[0]?.message?.content;
+    if (!content) throw new Error('API returned empty response');
+    return content;
+  }
+
+  // ═══════════════════════════════════════════════
+  // CODE EXTRACTION
+  // ═══════════════════════════════════════════════
+
+  function extractCode(response) {
+    // Try to extract from markdown code fences
+    // Patterns: ```html ... ```, ```javascript ... ```, ``` ... ```
+    const patterns = [
+      /```html\s*\n([\s\S]*?)```/i,
+      /```javascript\s*\n([\s\S]*?)```/i,
+      /```js\s*\n([\s\S]*?)```/i,
+      /```\s*\n([\s\S]*?)```/,
+    ];
+
+    for (const pattern of patterns) {
+      const match = response.match(pattern);
+      if (match && match[1]) {
+        return match[1].trim();
+      }
+    }
+
+    // If no fences found, check if the response looks like HTML
+    const trimmed = response.trim();
+    if (trimmed.startsWith('<!DOCTYPE') || trimmed.startsWith('<html') || trimmed.startsWith('<head')) {
+      return trimmed;
+    }
+
+    // Last resort: return the whole response
+    return trimmed;
+  }
+
+  // ═══════════════════════════════════════════════
+  // IFRAME RENDERING
+  // ═══════════════════════════════════════════════
+
+  function renderInIframe(code) {
+    const iframe = document.getElementById('game-iframe');
+    const placeholder = document.getElementById('iframe-placeholder');
+    const errorPanel = document.getElementById('error-panel');
+
+    // Hide error panel by default
+    if (errorPanel) errorPanel.classList.add('hidden');
+
+    try {
+      // Use srcdoc for normal-sized code
+      iframe.srcdoc = code;
+      placeholder.classList.add('hidden');
+      lastGeneratedCode = code;
+
+      // Switch to sandbox tab
+      switchTab('sandbox');
+
+      // Listen for iframe errors
+      iframe.onload = function() {
+        try {
+          const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+          // Check if the iframe content looks like it has an error (empty body or error text)
+          if (iframeDoc && iframeDoc.body && iframeDoc.body.innerHTML.trim() === '') {
+            // The page loaded but is empty — might still be rendering
+          }
+        } catch (e) {
+          // Cross-origin — can't inspect, which is fine
+        }
+      };
+    } catch (e) {
+      // Fallback to Blob URL for very large code
+      try {
+        const blob = new Blob([code], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        iframe.src = url;
+        iframe.removeAttribute('srcdoc');
+        placeholder.classList.add('hidden');
+        lastGeneratedCode = code;
+        switchTab('sandbox');
+      } catch (e2) {
+        showToast('Failed to render game: ' + e2.message, 'error');
+        showErrorInPanel('Failed to render game: ' + e2.message);
+      }
+    }
+  }
+
+  function showErrorInPanel(message) {
+    const errorPanel = document.getElementById('error-panel');
+    const errorText = document.getElementById('error-text');
+    if (errorPanel && errorText) {
+      errorText.textContent = message;
+      errorPanel.classList.remove('hidden');
+    }
+  }
+
+  function hideErrorPanel() {
+    const errorPanel = document.getElementById('error-panel');
+    if (errorPanel) errorPanel.classList.add('hidden');
+  }
+
+  // ═══════════════════════════════════════════════
+  // GENERATE GAME
+  // ═══════════════════════════════════════════════
+
+  async function generateGame() {
+    if (isGenerating) return;
+
+    // Validate API settings
+    if (!apiSettings.baseUrl) {
+      showToast('Please configure API settings first (⚙️)', 'warning');
+      openModal('modal-settings');
+      return;
+    }
+
+    // Check for conflicts
+    const conflicts = checkConflicts();
+    if (conflicts.length > 0) {
+      // Show conflicts but allow user to proceed
+      displayConflicts();
+    }
+
+    isGenerating = true;
+    showLoading('Generating your game...');
+    hideErrorPanel();
+    document.getElementById('btn-generate').disabled = true;
+
+    try {
+      const { systemPrompt, userPrompt } = assemblePrompt();
+
+      // Build conversation
+      conversationHistory = [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ];
+
+      const response = await callLLM(conversationHistory);
+      conversationHistory.push({ role: 'assistant', content: response });
+
+      const code = extractCode(response);
+
+      if (!code || code.trim().length === 0) {
+        throw new Error('The AI returned empty code. Try adjusting your settings or prompt.');
+      }
+
+      renderInIframe(code);
+
+      // Save to history
+      saveToHistory(code);
+
+      showToast('Game generated successfully! 🎮', 'success');
+    } catch (err) {
+      console.error('Generation failed:', err);
+      showToast('Generation failed: ' + err.message, 'error', 5000);
+      showErrorInPanel('Generation failed: ' + err.message);
+    } finally {
+      isGenerating = false;
+      hideLoading();
+      document.getElementById('btn-generate').disabled = false;
+    }
+  }
+
+  // ═══════════════════════════════════════════════
+  // REFINE FEATURE
+  // ═══════════════════════════════════════════════
+
+  async function refineGame(instruction) {
+    if (isGenerating) return;
+    if (!conversationHistory.length) {
+      showToast('Generate a game first before refining', 'warning');
+      return;
+    }
+
+    isGenerating = true;
+    showLoading('Refining your game...');
+    hideErrorPanel();
+    document.getElementById('btn-refine').disabled = true;
+
+    try {
+      conversationHistory.push({
+        role: 'user',
+        content: `Refine the game with this change: ${instruction}\n\nReturn the COMPLETE updated game code. Do not omit any parts.`,
+      });
+
+      const response = await callLLM(conversationHistory);
+      conversationHistory.push({ role: 'assistant', content: response });
+
+      const code = extractCode(response);
+
+      if (!code || code.trim().length === 0) {
+        throw new Error('The AI returned empty code. Try rephrasing your refinement.');
+      }
+
+      renderInIframe(code);
+
+      // Update history entry
+      saveToHistory(code, true);
+
+      showToast('Game refined! 🔄', 'success');
+      document.getElementById('refine-input').value = '';
+    } catch (err) {
+      console.error('Refine failed:', err);
+      showToast('Refine failed: ' + err.message, 'error', 5000);
+      showErrorInPanel('Refine failed: ' + err.message);
+    } finally {
+      isGenerating = false;
+      hideLoading();
+      document.getElementById('btn-refine').disabled = false;
+    }
+  }
+
+  // ═══════════════════════════════════════════════
+  // HISTORY
+  // ═══════════════════════════════════════════════
+
+  function saveToHistory(code, isRefine = false) {
+    const list = readHistory();
+    const genre = state.coreIdentity.genre || 'Unknown';
+    const theme = state.coreIdentity.theme || 'Untitled';
+
+    const entry = {
+      id: uid(),
+      title: `${genre} — ${theme}`,
+      genre,
+      theme,
+      code,
+      config: deepClone(state),
+      moduleEnabled: deepClone(moduleEnabled),
+      timestamp: Date.now(),
+      isRefine,
+    };
+
+    list.unshift(entry);
+    writeHistory(list);
+  }
+
+  function renderHistory() {
+    const list = readHistory();
+    const container = document.getElementById('history-list');
+
+    if (list.length === 0) {
+      container.innerHTML = '<p class="placeholder">No generations yet. Create your first game!</p>';
+      return;
+    }
+
+    container.innerHTML = list.map(item => `
+      <div class="history-item" data-id="${item.id}">
+        <div class="history-info">
+          <div class="history-title">${escapeHtml(item.title)}</div>
+          <div class="history-meta">${formatTimestamp(item.timestamp)}${item.isRefine ? ' · Refined' : ''}</div>
+        </div>
+        <div class="history-actions">
+          <button class="btn btn-sm" onclick="window.__loadHistory('${item.id}')" title="Load this game">📂 Load</button>
+          <button class="btn btn-sm btn-danger" onclick="window.__deleteHistory('${item.id}')" title="Delete">🗑️</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function loadHistoryItem(id) {
+    const list = readHistory();
+    const item = list.find(h => h.id === id);
+    if (!item) {
+      showToast('History item not found', 'error');
+      return;
+    }
+
+    // Restore config
+    state = { ...deepClone(DEFAULT_STATE), ...item.config };
+    moduleEnabled = { ...deepClone(DEFAULT_MODULE_ENABLED), ...item.moduleEnabled };
+
+    // Restore code to iframe
+    if (item.code) {
+      renderInIframe(item.code);
+    }
+
+    // Update UI fields
+    syncUIFromState();
+    updatePromptPreview();
+    saveState();
+
+    closeModal('modal-history');
+    showToast('Loaded: ' + item.title, 'success');
+  }
+
+  function deleteHistoryItem(id) {
+    let list = readHistory();
+    list = list.filter(h => h.id !== id);
+    writeHistory(list);
+    renderHistory();
+    showToast('History item deleted', 'info');
+  }
+
+  function clearHistory() {
+    if (!confirm('Delete all generation history? This cannot be undone.')) return;
+    writeHistory([]);
+    renderHistory();
+    showToast('History cleared', 'info');
+  }
+
+  // ═══════════════════════════════════════════════
+  // TEMPLATES
+  // ═══════════════════════════════════════════════
+
+  function saveTemplate() {
+    const name = prompt('Template name:');
+    if (!name) return;
+
+    const list = readTemplates();
+    list.unshift({
+      id: uid(),
+      name,
+      config: deepClone(state),
+      moduleEnabled: deepClone(moduleEnabled),
+      timestamp: Date.now(),
+    });
+    writeTemplates(list);
+    renderTemplates();
+    showToast('Template saved: ' + name, 'success');
+  }
+
+  function renderTemplates() {
+    const list = readTemplates();
+    const container = document.getElementById('template-list');
+
+    if (list.length === 0) {
+      container.innerHTML = '<p class="placeholder">No saved templates yet. Configure your modules and save!</p>';
+      return;
+    }
+
+    container.innerHTML = list.map(item => `
+      <div class="template-item" data-id="${item.id}">
+        <div class="template-info">
+          <div class="template-title">${escapeHtml(item.name)}</div>
+          <div class="template-meta">${formatTimestamp(item.timestamp)}</div>
+        </div>
+        <div class="template-actions-bar">
+          <button class="btn btn-sm" onclick="window.__loadTemplate('${item.id}')" title="Load template">📂 Load</button>
+          <button class="btn btn-sm btn-danger" onclick="window.__deleteTemplate('${item.id}')" title="Delete">🗑️</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function loadTemplate(id) {
+    const list = readTemplates();
+    const item = list.find(t => t.id === id);
+    if (!item) {
+      showToast('Template not found', 'error');
+      return;
+    }
+
+    state = { ...deepClone(DEFAULT_STATE), ...item.config };
+    moduleEnabled = { ...deepClone(DEFAULT_MODULE_ENABLED), ...item.moduleEnabled };
+
+    syncUIFromState();
+    updatePromptPreview();
+    saveState();
+
+    closeModal('modal-templates');
+    showToast('Template loaded: ' + item.name, 'success');
+  }
+
+  function deleteTemplate(id) {
+    let list = readTemplates();
+    list = list.filter(t => t.id !== id);
+    writeTemplates(list);
+    renderTemplates();
+    showToast('Template deleted', 'info');
+  }
+
+  // ═══════════════════════════════════════════════
+  // DOWNLOAD
+  // ═══════════════════════════════════════════════
+
+  function downloadHTML() {
+    if (!lastGeneratedCode) {
+      showToast('No game to download. Generate one first!', 'warning');
+      return;
+    }
+
+    const blob = new Blob([lastGeneratedCode], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const genre = state.coreIdentity.genre || 'game';
+    const theme = state.coreIdentity.theme || 'untitled';
+    a.download = `${genre.toLowerCase()}-${theme.toLowerCase().replace(/\s+/g, '-')}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    showToast('Game downloaded! 💾', 'success');
+  }
+
+  // ═══════════════════════════════════════════════
+  // UI SYNC
+  // ═══════════════════════════════════════════════
+
+  function syncUIFromState() {
+    // Sync all data-path fields
+    document.querySelectorAll('[data-path]').forEach(el => {
+      const path = el.dataset.path;
+      const value = getNestedValue(state, path);
+      if (value === undefined || value === null) return;
+
+      if (el.type === 'checkbox') {
+        el.checked = !!value;
+      } else {
+        el.value = value;
+      }
+    });
+
+    // Sync module toggles
+    document.querySelectorAll('.module-toggle').forEach(cb => {
+      cb.checked = !!moduleEnabled[cb.dataset.moduleKey];
+    });
+
+    // Sync mechanics tags
+    document.querySelectorAll('#mechanics-tags .tag-btn').forEach(btn => {
+      const isActive = state.mechanics.tags.includes(btn.dataset.value);
+      btn.classList.toggle('active', isActive);
+    });
+
+    // Update derived labels
+    updateToneLabel();
+    updateSingleFileLabel();
+    updateTempLabel();
+  }
+
+  function syncStateFromUI() {
+    // Sync all data-path fields
+    document.querySelectorAll('[data-path]').forEach(el => {
+      const path = el.dataset.path;
+      if (!path) return;
+
+      let value;
+      if (el.type === 'checkbox') {
+        value = el.checked;
+      } else if (el.type === 'number' || el.type === 'range') {
+        value = parseFloat(el.value);
+      } else if (el.type === 'color') {
+        value = el.value;
+      } else {
+        value = el.value;
+      }
+
+      setNestedValue(state, path, value);
+    });
+
+    // Sync module toggles
+    document.querySelectorAll('.module-toggle').forEach(cb => {
+      moduleEnabled[cb.dataset.moduleKey] = cb.checked;
+    });
+
+    // Sync mechanics tags
+    state.mechanics.tags = [];
+    document.querySelectorAll('#mechanics-tags .tag-btn.active').forEach(btn => {
+      state.mechanics.tags.push(btn.dataset.value);
+    });
+  }
+
+  function updatePromptPreview() {
+    const preview = document.getElementById('prompt-preview');
+    preview.textContent = getFullPromptText();
+  }
+
+  function updateToneLabel() {
+    const val = state.coreIdentity.tone;
+    const label = val <= 20 ? 'Very Dark/Gritty'
+      : val <= 40 ? 'Dark'
+      : val <= 60 ? 'Balanced'
+      : val <= 80 ? 'Bright' : 'Very Bright/Whimsical';
+    document.getElementById('tone-label').textContent = label;
+  }
+
+  function updateSingleFileLabel() {
+    const label = document.getElementById('singleFile-label');
+    if (label) {
+      label.textContent = state.techStack.singleFile ? 'Yes — all code in one HTML file' : 'No — separate files allowed';
+    }
+  }
+
+  function updateTempLabel() {
+    const label = document.getElementById('temp-label');
+    if (label) {
+      label.textContent = apiSettings.temperature;
+    }
+  }
+
+  // ═══════════════════════════════════════════════
+  // TAB SWITCHING
+  // ═══════════════════════════════════════════════
+
+  function switchTab(tabName) {
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.tab === tabName);
+    });
+    document.querySelectorAll('.tab-panel').forEach(panel => {
+      panel.classList.toggle('active', panel.id === `panel-${tabName}`);
+    });
+  }
+
+  // ═══════════════════════════════════════════════
+  // MODALS
+  // ═══════════════════════════════════════════════
+
+  function openModal(id) {
+    const modal = document.getElementById(id);
+    if (modal && modal.showModal) {
+      modal.showModal();
+    }
+  }
+
+  function closeModal(id) {
+    const modal = document.getElementById(id);
+    if (modal && modal.close) {
+      modal.close();
+    }
+  }
+
+  // ═══════════════════════════════════════════════
+  // HTML ESCAPE
+  // ═══════════════════════════════════════════════
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  // ═══════════════════════════════════════════════
+  // FULLSCREEN IFRAME
+  // ═══════════════════════════════════════════════
+
+  function toggleFullscreen() {
+    const container = document.getElementById('iframe-container');
+    const isFs = container.classList.toggle('fullscreen');
+
+    if (isFs) {
+      // Add exit button
+      const exitBtn = document.createElement('button');
+      exitBtn.className = 'fullscreen-exit';
+      exitBtn.textContent = '✕ Exit Fullscreen';
+      exitBtn.onclick = toggleFullscreen;
+      container.appendChild(exitBtn);
+    } else {
+      // Remove exit button
+      const exitBtn = container.querySelector('.fullscreen-exit');
+      if (exitBtn) exitBtn.remove();
+    }
+  }
+
+  // ═══════════════════════════════════════════════
+  // COPY PROMPT
+  // ═══════════════════════════════════════════════
+
+  async function copyPrompt() {
+    const text = getFullPromptText();
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast('Prompt copied to clipboard! 📋', 'success');
+    } catch {
+      // Fallback
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      ta.remove();
+      showToast('Prompt copied! 📋', 'success');
+    }
+  }
+
+  // ═══════════════════════════════════════════════
+  // EVENT LISTENERS
+  // ═══════════════════════════════════════════════
+
+  function initEventListeners() {
+    // ── Generate Button ──
+    document.getElementById('btn-generate').addEventListener('click', generateGame);
+
+    // ── Refine Button ──
+    document.getElementById('btn-refine').addEventListener('click', () => {
+      const input = document.getElementById('refine-input');
+      if (input.value.trim()) refineGame(input.value.trim());
+    });
+
+    // ── Refine Enter Key ──
+    document.getElementById('refine-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        const val = e.target.value.trim();
+        if (val) refineGame(val);
+      }
+    });
+
+    // ── All data-path fields: auto-save on change ──
+    document.querySelectorAll('[data-path]').forEach(el => {
+      const eventType = (el.type === 'range' || el.type === 'color') ? 'input' : 'change';
+      el.addEventListener(eventType, () => {
+        syncStateFromUI();
+        updatePromptPreview();
+        updateToneLabel();
+        updateSingleFileLabel();
+        saveState();
+        displayConflicts();
+      });
+    });
+
+    // ── Module toggles ──
+    document.querySelectorAll('.module-toggle').forEach(cb => {
+      cb.addEventListener('change', () => {
+        moduleEnabled[cb.dataset.moduleKey] = cb.checked;
+        updatePromptPreview();
+        saveState();
+      });
+    });
+
+    // ── Mechanics tags ──
+    document.querySelectorAll('#mechanics-tags .tag-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        btn.classList.toggle('active');
+        syncStateFromUI();
+        updatePromptPreview();
+        saveState();
+      });
+    });
+
+    // ── Tab switching ──
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+    });
+
+    // ── Sidebar toggle ──
+    document.getElementById('btn-toggle-sidebar').addEventListener('click', () => {
+      document.getElementById('sidebar').classList.toggle('collapsed');
+    });
+
+    // ── Settings modal ──
+    document.getElementById('btn-settings').addEventListener('click', () => {
+      // Populate settings fields from apiSettings
+      document.getElementById('apiBaseUrl').value = apiSettings.baseUrl;
+      document.getElementById('apiKey').value = apiSettings.key;
+      document.getElementById('modelName').value = apiSettings.model;
+      document.getElementById('apiTemperature').value = apiSettings.temperature;
+      updateTempLabel();
+
+      // Highlight matching provider preset
+      document.querySelectorAll('.provider-btn').forEach(btn => {
+        const preset = PROVIDER_PRESETS[btn.dataset.provider];
+        if (preset && apiSettings.baseUrl === preset.baseUrl) {
+          btn.classList.add('active');
+          // Populate model dropdown for this provider
+          const modelSelect = document.getElementById('modelPreset');
+          modelSelect.innerHTML = '<option value="">— Quick Select —</option>';
+          preset.models.forEach(model => {
+            const opt = document.createElement('option');
+            opt.value = model;
+            opt.textContent = model;
+            modelSelect.appendChild(opt);
+          });
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+
+      openModal('modal-settings');
+    });
+
+    // ── Save settings on close ──
+    document.getElementById('modal-settings').addEventListener('close', () => {
+      apiSettings.baseUrl = document.getElementById('apiBaseUrl').value.trim();
+      apiSettings.key = document.getElementById('apiKey').value.trim();
+      apiSettings.model = document.getElementById('modelName').value.trim();
+      apiSettings.temperature = parseFloat(document.getElementById('apiTemperature').value) || 0.7;
+      // Save active provider
+      const activeProvider = document.querySelector('.provider-btn.active');
+      apiSettings.provider = activeProvider ? activeProvider.dataset.provider : '';
+      saveApiSettings();
+    });
+
+    // ── Temperature slider live update ──
+    document.getElementById('apiTemperature').addEventListener('input', (e) => {
+      document.getElementById('temp-label').textContent = e.target.value;
+    });
+
+    // ── Provider preset buttons ──
+    document.querySelectorAll('.provider-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const provider = btn.dataset.provider;
+        const preset = PROVIDER_PRESETS[provider];
+        if (!preset) return;
+
+        // Highlight active provider
+        document.querySelectorAll('.provider-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        // Fill in base URL
+        document.getElementById('apiBaseUrl').value = preset.baseUrl;
+
+        // Fill in default model
+        document.getElementById('modelName').value = preset.defaultModel;
+
+        // Populate model quick-select dropdown
+        const modelSelect = document.getElementById('modelPreset');
+        modelSelect.innerHTML = '<option value="">— Quick Select —</option>';
+        preset.models.forEach(model => {
+          const opt = document.createElement('option');
+          opt.value = model;
+          opt.textContent = model;
+          modelSelect.appendChild(opt);
+        });
+
+        // Clear API key for local providers
+        if (!preset.needsKey) {
+          document.getElementById('apiKey').value = '';
+          document.getElementById('apiKey').placeholder = 'Not required for local LLMs';
+        } else {
+          document.getElementById('apiKey').placeholder = 'sk-... (enter your API key)';
+        }
+
+        // Update temperature label
+        updateTempLabel();
+      });
+    });
+
+    // ── Model quick-select dropdown ──
+    document.getElementById('modelPreset').addEventListener('change', (e) => {
+      if (e.target.value) {
+        document.getElementById('modelName').value = e.target.value;
+      }
+    });
+
+    // ── History modal ──
+    document.getElementById('btn-history').addEventListener('click', () => {
+      renderHistory();
+      openModal('modal-history');
+    });
+
+    // ── Clear history ──
+    document.getElementById('btn-clear-history').addEventListener('click', clearHistory);
+
+    // ── Templates modal ──
+    document.getElementById('btn-templates').addEventListener('click', () => {
+      renderTemplates();
+      openModal('modal-templates');
+    });
+
+    // ── Save template ──
+    document.getElementById('btn-save-template').addEventListener('click', saveTemplate);
+
+    // ── Download HTML ──
+    document.getElementById('btn-download').addEventListener('click', downloadHTML);
+
+    // ── Fullscreen ──
+    document.getElementById('btn-fullscreen').addEventListener('click', toggleFullscreen);
+
+    // ── Refresh iframe ──
+    document.getElementById('btn-refresh-iframe').addEventListener('click', () => {
+      if (lastGeneratedCode) {
+        renderInIframe(lastGeneratedCode);
+        showToast('Game refreshed', 'info');
+      }
+    });
+
+    // ── Dismiss error panel ──
+    const btnDismissError = document.getElementById('btn-dismiss-error');
+    if (btnDismissError) {
+      btnDismissError.addEventListener('click', hideErrorPanel);
+    }
+
+    // ── Copy prompt ──
+    document.getElementById('btn-copy-prompt').addEventListener('click', copyPrompt);
+
+    // ── Modal close buttons ──
+    document.querySelectorAll('[data-close]').forEach(btn => {
+      btn.addEventListener('click', () => closeModal(btn.dataset.close));
+    });
+
+    // ── Close modals on backdrop click ──
+    document.querySelectorAll('.modal').forEach(modal => {
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) modal.close();
+      });
+    });
+
+    // ── Module scroll buttons ──
+    document.querySelectorAll('.module-scroll-top').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const body = btn.closest('.module-body');
+        if (body) body.scrollBy({ top: -100, behavior: 'smooth' });
+      });
+    });
+    document.querySelectorAll('.module-scroll-bottom').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const body = btn.closest('.module-body');
+        if (body) body.scrollBy({ top: 100, behavior: 'smooth' });
+      });
+    });
+
+    // ── Keyboard shortcuts ──
+    document.addEventListener('keydown', (e) => {
+      // Ctrl+Enter: Generate
+      if (e.ctrlKey && e.key === 'Enter') {
+        e.preventDefault();
+        generateGame();
+      }
+      // Ctrl+B: Toggle sidebar
+      if (e.ctrlKey && e.key === 'b') {
+        e.preventDefault();
+        document.getElementById('sidebar').classList.toggle('collapsed');
+      }
+      // Ctrl+H: History
+      if (e.ctrlKey && e.key === 'h') {
+        e.preventDefault();
+        renderHistory();
+        openModal('modal-history');
+      }
+      // Ctrl+T: Templates
+      if (e.ctrlKey && e.key === 't') {
+        e.preventDefault();
+        renderTemplates();
+        openModal('modal-templates');
+      }
+      // Ctrl+,: Settings
+      if (e.ctrlKey && e.key === ',') {
+        e.preventDefault();
+        document.getElementById('btn-settings').click();
+      }
+      // Escape: Close modals or fullscreen
+      if (e.key === 'Escape') {
+        const fsContainer = document.getElementById('iframe-container');
+        if (fsContainer.classList.contains('fullscreen')) {
+          toggleFullscreen();
+        }
+      }
+    });
+  }
+
+  // ═══════════════════════════════════════════════
+  // GLOBAL EXPOSES (for inline onclick in history/templates)
+  // ═══════════════════════════════════════════════
+
+  window.__loadHistory = loadHistoryItem;
+  window.__deleteHistory = deleteHistoryItem;
+  window.__loadTemplate = loadTemplate;
+  window.__deleteTemplate = deleteTemplate;
+
+  // ═══════════════════════════════════════════════
+  // INITIALIZATION
+  // ═══════════════════════════════════════════════
+
+  function init() {
+    // Load persisted state
+    loadState();
+    loadApiSettings();
+
+    // Sync UI from loaded state
+    syncUIFromState();
+
+    // Build initial prompt preview
+    updatePromptPreview();
+
+    // Set up all event listeners
+    initEventListeners();
+
+    // Check for conflicts
+    displayConflicts();
+
+    console.log('🎮 Game Creator initialized');
+  }
+
+  // Run on DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+
+})();

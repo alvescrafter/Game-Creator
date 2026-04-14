@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Game Creator — Prompt Orchestrator</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ═══════════════ HEADER ═══════════════ -->
+  <header id="app-header">
+    <div class="header-left">
+      <button id="btn-toggle-sidebar" class="icon-btn" title="Toggle Sidebar (Ctrl+B)">☰</button>
+      <h1 class="logo">🎮 <span class="logo-text">Game Creator</span></h1>
+    </div>
+    <div class="header-center">
+      <button id="btn-generate" class="btn btn-primary btn-glow" title="Generate Game (Ctrl+Enter)">
+        ⚡ Generate Game
+      </button>
+    </div>
+    <div class="header-right">
+      <button id="btn-history" class="icon-btn" title="History (Ctrl+H)">📜</button>
+      <button id="btn-templates" class="icon-btn" title="Templates (Ctrl+T)">📋</button>
+      <button id="btn-settings" class="icon-btn" title="API Settings (Ctrl+,)">⚙️</button>
+    </div>
+  </header>
+
+  <!-- ═══════════════ MAIN LAYOUT ═══════════════ -->
+  <div id="app-body">
+
+    <!-- ──────── SIDEBAR: Module Builder ──────── -->
+    <aside id="sidebar">
+
+      <!-- Module A: Core Identity -->
+      <details class="module-card" data-module="coreIdentity" open>
+        <summary class="module-header">
+          <span class="module-icon">🎯</span>
+          <span class="module-title">Core Identity</span>
+          <label class="toggle-wrap" onclick="event.stopPropagation()">
+            <input type="checkbox" class="module-toggle" data-module-key="coreIdentity" checked>
+            <span class="toggle-switch"></span>
+          </label>
+        </summary>
+        <div class="module-body">
+          <button class="module-scroll-top" title="Scroll up">▲</button>
+          <p class="module-desc">Define the genre, theme, and tone of your game.</p>
+
+          <div class="field-group">
+            <label for="genre" class="field-label">Genre</label>
+            <select id="genre" class="field-select" data-path="coreIdentity.genre">
+              <option value="">— Select Genre —</option>
+              <option value="Platformer">Platformer</option>
+              <option value="RPG">RPG</option>
+              <option value="Puzzle">Puzzle</option>
+              <option value="Shooter">Shooter</option>
+              <option value="Idle">Idle / Incremental</option>
+              <option value="Racing">Racing</option>
+              <option value="Strategy">Strategy</option>
+              <option value="Roguelike">Roguelike</option>
+              <option value="Simulation">Simulation</option>
+              <option value="Visual Novel">Visual Novel</option>
+            </select>
+          </div>
+
+          <div class="field-group">
+            <label for="theme" class="field-label">Setting / Theme</label>
+            <input type="text" id="theme" class="field-input" data-path="coreIdentity.theme"
+                   placeholder='e.g. "Cyberpunk Neon City", "Medieval Forest"'>
+          </div>
+
+          <div class="field-group">
+            <label for="tone" class="field-label">
+              Tone: <span id="tone-label" class="slider-value">Balanced</span>
+            </label>
+            <div class="slider-row">
+              <span class="slider-extreme">🌑 Dark</span>
+              <input type="range" id="tone" class="field-slider" data-path="coreIdentity.tone"
+                     min="0" max="100" value="50" step="10">
+              <span class="slider-extreme">Bright ☀️</span>
+            </div>
+          </div>
+          <button class="module-scroll-bottom" title="Scroll down">▼</button>
+        </div>
+      </details>
+
+      <!-- Module B: Mechanics & Gameplay -->
+      <details class="module-card" data-module="mechanics" open>
+        <summary class="module-header">
+          <span class="module-icon">⚙️</span>
+          <span class="module-title">Mechanics & Gameplay</span>
+          <label class="toggle-wrap" onclick="event.stopPropagation()">
+            <input type="checkbox" class="module-toggle" data-module-key="mechanics" checked>
+            <span class="toggle-switch"></span>
+          </label>
+        </summary>
+        <div class="module-body">
+          <button class="module-scroll-top" title="Scroll up">▲</button>
+          <p class="module-desc">Define the rules, mechanics, and difficulty of your game.</p>
+
+          <div class="field-group">
+            <label class="field-label">Mechanics <span class="field-hint">(click to toggle)</span></label>
+            <div id="mechanics-tags" class="tag-grid">
+              <button class="tag-btn" data-value="Double Jump">Double Jump</button>
+              <button class="tag-btn" data-value="Inventory System">Inventory System</button>
+              <button class="tag-btn" data-value="Health Bar">Health Bar</button>
+              <button class="tag-btn" data-value="Gravity">Gravity</button>
+              <button class="tag-btn" data-value="Permadeath">Permadeath</button>
+              <button class="tag-btn" data-value="Leveling Up">Leveling Up</button>
+              <button class="tag-btn" data-value="Crafting">Crafting</button>
+              <button class="tag-btn" data-value="Stealth">Stealth</button>
+              <button class="tag-btn" data-value="Procedural Generation">Procedural Generation</button>
+              <button class="tag-btn" data-value="Physics">Physics</button>
+              <button class="tag-btn" data-value="Dialogue System">Dialogue System</button>
+              <button class="tag-btn" data-value="Collectibles">Collectibles</button>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label for="rules" class="field-label">Specific Rules</label>
+            <textarea id="rules" class="field-textarea" data-path="mechanics.rules" rows="3"
+                      placeholder='e.g. "The player loses a life every 30 seconds"'></textarea>
+          </div>
+
+          <div class="field-group">
+            <label for="difficulty" class="field-label">Difficulty Curve</label>
+            <select id="difficulty" class="field-select" data-path="mechanics.difficulty">
+              <option value="">— Select —</option>
+              <option value="Linear">Linear</option>
+              <option value="Exponential">Exponential</option>
+              <option value="Random">Random</option>
+              <option value="S-Curve">S-Curve</option>
+            </select>
+          </div>
+          <button class="module-scroll-bottom" title="Scroll down">▼</button>
+        </div>
+      </details>
+
+      <!-- Module C: Visual & Aesthetic -->
+      <details class="module-card" data-module="visuals" open>
+        <summary class="module-header">
+          <span class="module-icon">🎨</span>
+          <span class="module-title">Visual & Aesthetic</span>
+          <label class="toggle-wrap" onclick="event.stopPropagation()">
+            <input type="checkbox" class="module-toggle" data-module-key="visuals" checked>
+            <span class="toggle-switch"></span>
+          </label>
+        </summary>
+        <div class="module-body">
+          <button class="module-scroll-top" title="Scroll up">▲</button>
+          <p class="module-desc">Define the art style, colors, and visual effects.</p>
+
+          <div class="field-group">
+            <label for="artStyle" class="field-label">Art Style</label>
+            <select id="artStyle" class="field-select" data-path="visuals.artStyle">
+              <option value="">— Select Style —</option>
+              <option value="Pixel Art">Pixel Art</option>
+              <option value="Minimalist Vector">Minimalist Vector</option>
+              <option value="ASCII">ASCII Art</option>
+              <option value="Low-Poly 3D">Low-Poly 3D</option>
+              <option value="Hand-drawn">Hand-drawn</option>
+              <option value="Flat Design">Flat Design</option>
+              <option value="Retro CRT">Retro CRT</option>
+              <option value="Neon Glow">Neon Glow</option>
+            </select>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Color Palette</label>
+            <div class="color-row">
+              <div class="color-pick">
+                <label for="colorPrimary" class="color-label">Primary</label>
+                <input type="color" id="colorPrimary" class="field-color" data-path="visuals.colorPrimary" value="#6c5ce7">
+              </div>
+              <div class="color-pick">
+                <label for="colorSecondary" class="color-label">Secondary</label>
+                <input type="color" id="colorSecondary" class="field-color" data-path="visuals.colorSecondary" value="#00cec9">
+              </div>
+              <div class="color-pick">
+                <label for="colorBg" class="color-label">Background</label>
+                <input type="color" id="colorBg" class="field-color" data-path="visuals.colorBg" value="#0a0a1a">
+              </div>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label for="vfx" class="field-label">Visual Effects</label>
+            <input type="text" id="vfx" class="field-input" data-path="visuals.vfx"
+                   placeholder='e.g. "Screen shake on impact", "Particle explosions"'>
+          </div>
+          <button class="module-scroll-bottom" title="Scroll down">▼</button>
+        </div>
+      </details>
+
+      <!-- Module D: Technical Stack -->
+      <details class="module-card" data-module="techStack" open>
+        <summary class="module-header">
+          <span class="module-icon">💻</span>
+          <span class="module-title">Technical Stack</span>
+          <label class="toggle-wrap" onclick="event.stopPropagation()">
+            <input type="checkbox" class="module-toggle" data-module-key="techStack" checked>
+            <span class="toggle-switch"></span>
+          </label>
+        </summary>
+        <div class="module-body">
+          <button class="module-scroll-top" title="Scroll up">▲</button>
+          <p class="module-desc">Choose the framework, output format, and asset handling.</p>
+
+          <div class="field-group">
+            <label for="framework" class="field-label">Framework</label>
+            <select id="framework" class="field-select" data-path="techStack.framework">
+              <option value="">— Select Framework —</option>
+              <option value="Vanilla JS/Canvas">Vanilla JS / Canvas</option>
+              <option value="Phaser.js">Phaser.js</option>
+              <option value="Three.js">Three.js</option>
+              <option value="Kaboom.js">Kaboom.js</option>
+              <option value="PixiJS">PixiJS</option>
+              <option value="Matter.js">Matter.js (Physics)</option>
+            </select>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Single File Mode</label>
+            <div class="toggle-row">
+              <label class="toggle-wrap">
+                <input type="checkbox" id="singleFile" class="field-toggle" data-path="techStack.singleFile" checked>
+                <span class="toggle-switch"></span>
+              </label>
+              <span class="toggle-label" id="singleFile-label">Yes — all code in one HTML file</span>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label for="assetHandling" class="field-label">Asset Handling</label>
+            <input type="text" id="assetHandling" class="field-input" data-path="techStack.assetHandling"
+                   placeholder='e.g. "Use placeholder colored rectangles"'>
+          </div>
+
+          <div class="field-group">
+            <label for="maxTokens" class="field-label">Max Tokens <span class="field-hint">(API response limit)</span></label>
+            <input type="number" id="maxTokens" class="field-input" data-path="techStack.maxTokens"
+                   value="4096" min="256" max="32768" step="256">
+          </div>
+          <button class="module-scroll-bottom" title="Scroll down">▼</button>
+        </div>
+      </details>
+
+      <!-- Module E: Audio & Soundscape -->
+      <details class="module-card" data-module="audio">
+        <summary class="module-header">
+          <span class="module-icon">🔊</span>
+          <span class="module-title">Audio & Soundscape</span>
+          <label class="toggle-wrap" onclick="event.stopPropagation()">
+            <input type="checkbox" class="module-toggle" data-module-key="audio" checked>
+            <span class="toggle-switch"></span>
+          </label>
+        </summary>
+        <div class="module-body">
+          <button class="module-scroll-top" title="Scroll up">▲</button>
+          <p class="module-desc">Define the music mood and sound effects.</p>
+
+          <div class="field-group">
+            <label for="musicMood" class="field-label">Music Mood</label>
+            <select id="musicMood" class="field-select" data-path="audio.musicMood">
+              <option value="">— Select Mood —</option>
+              <option value="Lo-fi">Lo-fi</option>
+              <option value="Orchestral">Orchestral</option>
+              <option value="8-bit / Chiptune">8-bit / Chiptune</option>
+              <option value="Suspenseful">Suspenseful</option>
+              <option value="Upbeat Pop">Upbeat Pop</option>
+              <option value="Ambient">Ambient</option>
+              <option value="None">No Music</option>
+            </select>
+          </div>
+
+          <div class="field-group">
+            <label for="sfx" class="field-label">SFX Requirements</label>
+            <textarea id="sfx" class="field-textarea" data-path="audio.sfx" rows="2"
+                      placeholder='e.g. "High pitched beep for jumps", "Boom on explosion"'></textarea>
+          </div>
+          <button class="module-scroll-bottom" title="Scroll down">▼</button>
+        </div>
+      </details>
+
+    </aside>
+
+    <!-- ──────── MAIN: Preview & Sandbox ──────── -->
+    <main id="main-area">
+
+      <!-- Tab Bar -->
+      <div id="main-tabs">
+        <button class="tab-btn active" data-tab="preview">📝 Prompt Preview</button>
+        <button class="tab-btn" data-tab="sandbox">🎮 Game Sandbox</button>
+      </div>
+
+      <!-- Prompt Preview Panel -->
+      <section id="panel-preview" class="tab-panel active">
+        <div class="panel-toolbar">
+          <span class="panel-title">Assembled Master Prompt</span>
+          <div class="toolbar-actions">
+            <button id="btn-copy-prompt" class="btn btn-sm" title="Copy to clipboard">📋 Copy</button>
+          </div>
+        </div>
+        <pre id="prompt-preview" class="prompt-output"></pre>
+      </section>
+
+      <!-- Game Sandbox Panel -->
+      <section id="panel-sandbox" class="tab-panel">
+        <div class="panel-toolbar">
+          <span class="panel-title">Game Preview</span>
+          <div class="toolbar-actions">
+            <button id="btn-download" class="btn btn-sm" title="Download HTML file">💾 Download</button>
+            <button id="btn-fullscreen" class="btn btn-sm" title="Fullscreen">⛶ Fullscreen</button>
+            <button id="btn-refresh-iframe" class="btn btn-sm" title="Refresh">🔄 Refresh</button>
+          </div>
+        </div>
+        <div id="iframe-container">
+          <iframe id="game-iframe" sandbox="allow-scripts allow-modals" title="Game Preview"></iframe>
+          <div id="iframe-placeholder" class="placeholder">
+            <span class="placeholder-icon">🎮</span>
+            <p>Click <strong>⚡ Generate Game</strong> to create your game</p>
+          </div>
+        </div>
+        <!-- Error Panel -->
+        <div id="error-panel" class="error-panel hidden">
+          <div class="error-content">
+            <span class="error-icon">⚠️</span>
+            <span id="error-text" class="error-text">An error occurred.</span>
+            <button id="btn-dismiss-error" class="btn btn-sm" title="Dismiss">✕</button>
+          </div>
+        </div>
+        <!-- Refine Bar -->
+        <div id="refine-bar">
+          <input type="text" id="refine-input" class="refine-input"
+                 placeholder='Refine: e.g. "Make the player move faster", "Add a score counter"'>
+          <button id="btn-refine" class="btn btn-secondary" title="Send refinement (Enter)">🔄 Refine</button>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ═══════════════ MODALS ═══════════════ -->
+
+  <!-- Settings Modal -->
+  <dialog id="modal-settings" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>⚙️ API Settings</h2>
+        <button class="modal-close" data-close="modal-settings">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="field-group">
+          <label class="field-label">API Provider</label>
+          <div class="provider-presets">
+            <button class="provider-btn" data-provider="openai" title="OpenAI GPT models">
+              <span class="provider-icon">🟢</span> OpenAI
+            </button>
+            <button class="provider-btn" data-provider="gemini" title="Google Gemini via OpenAI-compatible endpoint">
+              <span class="provider-icon">🔵</span> Gemini
+            </button>
+            <button class="provider-btn" data-provider="claude" title="Anthropic Claude via OpenAI-compatible endpoint">
+              <span class="provider-icon">🟠</span> Claude
+            </button>
+            <button class="provider-btn" data-provider="ollama" title="Ollama local LLM server">
+              <span class="provider-icon">🦙</span> Ollama
+            </button>
+            <button class="provider-btn" data-provider="lmstudio" title="LM Studio local LLM server">
+              <span class="provider-icon">🟣</span> LM Studio
+            </button>
+          </div>
+        </div>
+        <div class="field-group">
+          <label for="apiBaseUrl" class="field-label">Base URL</label>
+          <input type="url" id="apiBaseUrl" class="field-input" data-path="api.baseUrl"
+                 placeholder="https://api.openai.com/v1" value="https://api.openai.com/v1">
+          <span class="field-hint">Auto-filled by provider above, or enter a custom endpoint.</span>
+        </div>
+        <div class="field-group">
+          <label for="apiKey" class="field-label">API Key</label>
+          <input type="password" id="apiKey" class="field-input" data-path="api.key"
+                 placeholder="sk-... (leave empty for local LLMs)">
+          <span class="field-hint">Stored in localStorage only — never sent to any server except your chosen API.</span>
+        </div>
+        <div class="field-group">
+          <label for="modelName" class="field-label">Model Name</label>
+          <div class="model-input-row">
+            <input type="text" id="modelName" class="field-input" data-path="api.model"
+                   placeholder="gpt-4o, gpt-3.5-turbo, llama3, etc." value="gpt-4o">
+            <select id="modelPreset" class="field-select model-preset-select" title="Quick model select">
+              <option value="">— Quick Select —</option>
+              <!-- Populated dynamically by JS -->
+            </select>
+          </div>
+        </div>
+        <div class="field-group">
+          <label for="apiTemperature" class="field-label">
+            Temperature: <span id="temp-label" class="slider-value">0.7</span>
+          </label>
+          <input type="range" id="apiTemperature" class="field-slider" data-path="api.temperature"
+                 min="0" max="2" value="0.7" step="0.1">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" data-close="modal-settings">Save</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- History Modal -->
+  <dialog id="modal-history" class="modal">
+    <div class="modal-content modal-wide">
+      <div class="modal-header">
+        <h2>📜 Generation History</h2>
+        <button class="modal-close" data-close="modal-history">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="history-list" class="history-list">
+          <p class="placeholder">No generations yet. Create your first game!</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="btn-clear-history" class="btn btn-danger">🗑️ Clear All</button>
+        <button class="btn btn-secondary" data-close="modal-history">Close</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Templates Modal -->
+  <dialog id="modal-templates" class="modal">
+    <div class="modal-content modal-wide">
+      <div class="modal-header">
+        <h2>📋 Template Library</h2>
+        <button class="modal-close" data-close="modal-templates">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="template-actions">
+          <button id="btn-save-template" class="btn btn-primary">💾 Save Current as Template</button>
+        </div>
+        <div id="template-list" class="template-list">
+          <p class="placeholder">No saved templates yet. Configure your modules and save!</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-close="modal-templates">Close</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Loading Overlay -->
+  <div id="loading-overlay" class="loading-overlay hidden">
+    <div class="loading-spinner">
+      <div class="spinner"></div>
+      <p id="loading-text">Generating your game...</p>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
