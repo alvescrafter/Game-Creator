@@ -46,7 +46,7 @@
     framework: 'Vanilla JS/Canvas',
     singleFile: true,
     assetHandling: 'Use placeholder colored rectangles and simple shapes',
-    maxTokens: 100000,
+    maxTokens: 20000,
   };
 
   const DEFAULT_API = {
@@ -259,6 +259,9 @@
 
     // Always use single file mode
     systemPrompt += '\n\nIMPORTANT: Deliver the ENTIRE game in a SINGLE HTML file including all CSS and JavaScript. Ensure all logic is contained within the file. Do NOT split into separate files.';
+
+    // Token limit constraint
+    systemPrompt += '\n\nCRITICAL: The entire game code MUST be below 20,000 tokens. Keep the code concise and efficient while maintaining full functionality.';
 
     // Always include framework instruction
     systemPrompt += `\n\nUse ${TECH_DEFAULTS.framework} for rendering and game logic.`;
