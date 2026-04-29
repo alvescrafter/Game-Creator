@@ -139,6 +139,58 @@ body {
   line-height: 1;
 }
 
+/* Tooltip for motivational message */
+.btn-coffee[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 8px;
+  padding: 8px 12px;
+  background: rgba(26, 53, 80, 0.95);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: var(--radius-md);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--transition);
+  z-index: 1001;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.btn-coffee[data-tooltip]:hover::after {
+  opacity: 1;
+}
+
+/* Arrow pointer for tooltip */
+.btn-coffee[data-tooltip]::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(7px);
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 4px solid rgba(26, 53, 80, 0.95);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--transition);
+  z-index: 1001;
+}
+
+.btn-coffee[data-tooltip]:hover::before {
+  opacity: 1;
+}
+
+.btn-coffee {
+  position: relative;
+}
+
 /* Hide text on small screens, show only icon */
 @media (max-width: 640px) {
   .btn-coffee .coffee-text {
@@ -146,6 +198,11 @@ body {
   }
   .btn-coffee {
     padding: 6px 10px;
+  }
+  .btn-coffee[data-tooltip]::after {
+    white-space: normal;
+    width: 150px;
+    text-align: center;
   }
 }
 
