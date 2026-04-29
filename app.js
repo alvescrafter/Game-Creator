@@ -69,7 +69,7 @@
   const PROVIDER_PRESETS = {
     openai: {
       baseUrl: 'https://api.openai.com/v1',
-      models: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-4', 'gpt-3.5-turbo', 'o1-preview', 'o1-mini'],
+      models: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-4', 'gpt-3.5-turbo', 'o1-preview', 'o1-mini', 'o3-mini'],
       defaultModel: 'gpt-4o',
       needsKey: true,
     },
@@ -388,25 +388,53 @@
 
   async function callLLM(messages) {
     const baseUrl = apiSettings.baseUrl.replace(/\/+$/, ''); // trim trailing slash
+    const provider = apiSettings.provider || detectProviderFromUrl(baseUrl);
     const endpoint = `${baseUrl}/chat/completions`;
 
     const headers = {
       'Content-Type': 'application/json',
     };
-    if (apiSettings.key) {
+
+    // Provider-specific auth headers
+    if (provider === 'claude') {
+      // Anthropic requires x-api-key header and anthropic-version
+      headers['x-api-key'] = apiSettings.key;
+      headers['anthropic-version'] = '2023-06-01';
+    } else if (apiSettings.key) {
       headers['Authorization'] = `Bearer ${apiSettings.key}`;
     }
 
     const maxTokens = TECH_DEFAULTS.maxTokens;
 
-    const body = {
-      model: apiSettings.model,
-      messages,
-      temperature: parseFloat(apiSettings.temperature) || 0.7,
-      max_tokens: maxTokens,
-    };
+    // Build request body — Claude uses a different format
+    let body;
+    if (provider === 'claude') {
+      // Anthropic Messages API format
+      const systemMsg = messages.find(m => m.role === 'system');
+      const userMessages = messages.filter(m => m.role !== 'system');
+      body = {
+        model: apiSettings.model,
+        messages: userMessages,
+        max_tokens: maxTokens,
+        temperature: parseFloat(apiSettings.temperature) || 0.7,
+      };
+      if (systemMsg) body.system = systemMsg.content;
+    } else {
+      // OpenAI-compatible format (OpenAI, Gemini, Ollama, LM Studio)
+      body = {
+        model: apiSettings.model,
+        messages,
+        temperature: parseFloat(apiSettings.temperature) || 0.7,
+        max_tokens: maxTokens,
+      };
+    }
 
-    const res = await fetch(endpoint, {
+    // Claude uses a different endpoint
+    const finalEndpoint = provider === 'claude'
+      ? `${baseUrl}/messages`
+      : endpoint;
+
+    const res = await fetch(finalEndpoint, {
       method: 'POST',
       headers,
       body: JSON.stringify(body),
@@ -418,9 +446,249 @@
     }
 
     const data = await res.json();
-    const content = data.choices?.[0]?.message?.content;
-    if (!content) throw new Error('API returned empty response');
-    return content;
+
+    // Parse response based on provider
+    if (provider === 'claude') {
+      const content = data.content?.[0]?.text;
+      if (!content) throw new Error('API returned empty response');
+      return content;
+    } else {
+      const content = data.choices?.[0]?.message?.content;
+      if (!content) throw new Error('API returned empty response');
+      return content;
+    }
+  }
+
+  // ── Detect provider from base URL ──
+  function detectProviderFromUrl(url) {
+    const lower = url.toLowerCase();
+    if (lower.includes('anthropic') || lower.includes('claude')) return 'claude';
+    if (lower.includes('generativelanguage') || lower.includes('gemini')) return 'gemini';
+    if (lower.includes('localhost:11434') || lower.includes('ollama')) return 'ollama';
+    if (lower.includes('localhost:1234') || lower.includes('lmstudio')) return 'lmstudio';
+    if (lower.includes('openai')) return 'openai';
+    return 'openai'; // default to OpenAI-compatible
+  }
+
+  // ═══════════════════════════════════════════════
+  // TEST API CONNECTION
+  // ═══════════════════════════════════════════════
+
+  async function testApiConnection() {
+    const statusEl = document.getElementById('connection-status');
+    const btn = document.getElementById('btn-test-connection');
+    const baseUrl = document.getElementById('apiBaseUrl').value.trim().replace(/\/+$/, '');
+    const apiKey = document.getElementById('apiKey').value.trim();
+    const model = document.getElementById('modelName').value.trim();
+    const activeProviderBtn = document.querySelector('.provider-btn.active');
+    const provider = activeProviderBtn ? activeProviderBtn.dataset.provider : detectProviderFromUrl(baseUrl);
+
+    if (!baseUrl) {
+      statusEl.textContent = '❌ Base URL is required';
+      statusEl.className = 'connection-status error';
+      return;
+    }
+
+    // Show testing state
+    btn.classList.add('loading');
+    btn.disabled = true;
+    statusEl.textContent = '⏳ Testing connection...';
+    statusEl.className = 'connection-status testing';
+
+    try {
+      // First, try to fetch models list (lightweight check)
+      const modelsAvailable = await fetchModelsList(baseUrl, apiKey, provider, true);
+
+      if (modelsAvailable.length > 0) {
+        statusEl.textContent = `✅ Connected! Found ${modelsAvailable.length} model(s)`;
+        statusEl.className = 'connection-status success';
+      } else {
+        // If no models endpoint, try a minimal chat completion
+        await testMinimalCompletion(baseUrl, apiKey, model, provider);
+        statusEl.textContent = '✅ Connected! API responded successfully';
+        statusEl.className = 'connection-status success';
+      }
+    } catch (err) {
+      statusEl.textContent = `❌ ${err.message}`;
+      statusEl.className = 'connection-status error';
+    } finally {
+      btn.classList.remove('loading');
+      btn.disabled = false;
+    }
+  }
+
+  // ── Minimal completion test ──
+  async function testMinimalCompletion(baseUrl, apiKey, model, provider) {
+    const headers = { 'Content-Type': 'application/json' };
+    if (provider === 'claude') {
+      headers['x-api-key'] = apiKey;
+      headers['anthropic-version'] = '2023-06-01';
+    } else if (apiKey) {
+      headers['Authorization'] = `Bearer ${apiKey}`;
+    }
+
+    let endpoint, body;
+    if (provider === 'claude') {
+      endpoint = `${baseUrl}/messages`;
+      body = {
+        model: model || 'claude-sonnet-4-20250514',
+        messages: [{ role: 'user', content: 'Hi' }],
+        max_tokens: 5,
+      };
+    } else {
+      endpoint = `${baseUrl}/chat/completions`;
+      body = {
+        model: model || 'gpt-4o',
+        messages: [{ role: 'user', content: 'Hi' }],
+        max_tokens: 5,
+      };
+    }
+
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      const errText = await res.text().catch(() => 'Unknown error');
+      throw new Error(`API Error ${res.status}: ${errText.slice(0, 200)}`);
+    }
+  }
+
+  // ═══════════════════════════════════════════════
+  // AUTO-FETCH MODELS
+  // ═══════════════════════════════════════════════
+
+  async function fetchModelsList(baseUrl, apiKey, provider, silent = false) {
+    const headers = {};
+    if (provider === 'claude') {
+      headers['x-api-key'] = apiKey;
+      headers['anthropic-version'] = '2023-06-01';
+    } else if (apiKey) {
+      headers['Authorization'] = `Bearer ${apiKey}`;
+    }
+
+    let modelsEndpoint;
+    if (provider === 'claude') {
+      // Anthropic doesn't have a models list endpoint in the same way
+      // Return preset models
+      return PROVIDER_PRESETS.claude.models;
+    } else if (provider === 'gemini') {
+      // Gemini OpenAI-compatible endpoint supports /models
+      modelsEndpoint = `${baseUrl}/models`;
+    } else {
+      // OpenAI, Ollama, LM Studio all support /models or /v1/models
+      modelsEndpoint = `${baseUrl}/models`;
+    }
+
+    try {
+      const res = await fetch(modelsEndpoint, { headers });
+      if (!res.ok) {
+        // If /models fails, try the provider's native endpoint
+        if (provider === 'ollama') {
+          // Ollama native API
+          const nativeRes = await fetch(baseUrl.replace(/\/v1$/, '') + '/api/tags');
+          if (nativeRes.ok) {
+            const data = await nativeRes.json();
+            return (data.models || []).map(m => m.name || m.model);
+          }
+        }
+        if (provider === 'lmstudio') {
+          // LM Studio native API
+          const nativeRes = await fetch(baseUrl.replace(/\/v1$/, '') + '/api/v0/models');
+          if (nativeRes.ok) {
+            const data = await nativeRes.json();
+            return (data.data || []).map(m => m.id);
+          }
+        }
+        throw new Error(`Models endpoint returned ${res.status}`);
+      }
+
+      const data = await res.json();
+
+      // OpenAI-compatible format: { data: [{ id: "model-name", ... }] }
+      if (data.data && Array.isArray(data.data)) {
+        return data.data.map(m => m.id).filter(Boolean);
+      }
+
+      // Gemini format: { models: [{ name: "models/gemini-...", ... }] }
+      if (data.models && Array.isArray(data.models)) {
+        return data.models.map(m => {
+          // Gemini returns "models/gemini-2.0-flash" — strip the "models/" prefix
+          const name = m.name || m.id || '';
+          return name.replace(/^models\//, '');
+        }).filter(Boolean);
+      }
+
+      return [];
+    } catch (err) {
+      if (!silent) throw err;
+      return [];
+    }
+  }
+
+  async function autoFetchModels() {
+    const statusEl = document.getElementById('model-fetch-status');
+    const btn = document.getElementById('btn-fetch-models');
+    const baseUrl = document.getElementById('apiBaseUrl').value.trim().replace(/\/+$/, '');
+    const apiKey = document.getElementById('apiKey').value.trim();
+    const activeProviderBtn = document.querySelector('.provider-btn.active');
+    const provider = activeProviderBtn ? activeProviderBtn.dataset.provider : detectProviderFromUrl(baseUrl);
+
+    if (!baseUrl) {
+      statusEl.textContent = '❌ Enter a Base URL first';
+      statusEl.className = 'model-fetch-status error';
+      return;
+    }
+
+    btn.classList.add('loading');
+    btn.disabled = true;
+    statusEl.textContent = '⏳ Fetching models...';
+    statusEl.className = 'model-fetch-status';
+
+    try {
+      const models = await fetchModelsList(baseUrl, apiKey, provider);
+
+      if (models.length === 0) {
+        statusEl.textContent = '⚠️ No models found. Check your server is running.';
+        statusEl.className = 'model-fetch-status error';
+        return;
+      }
+
+      // Sort models alphabetically
+      models.sort((a, b) => a.localeCompare(b));
+
+      // Populate the model dropdown
+      const modelSelect = document.getElementById('modelPreset');
+      modelSelect.innerHTML = '<option value="">— Quick Select —</option>';
+      models.forEach(model => {
+        const opt = document.createElement('option');
+        opt.value = model;
+        opt.textContent = model;
+        modelSelect.appendChild(opt);
+      });
+
+      // Also update the provider preset models for future use
+      if (provider && PROVIDER_PRESETS[provider]) {
+        PROVIDER_PRESETS[provider].models = models;
+      }
+
+      // Auto-select first model if current model is empty
+      const modelNameInput = document.getElementById('modelName');
+      if (!modelNameInput.value.trim() && models.length > 0) {
+        modelNameInput.value = models[0];
+      }
+
+      statusEl.textContent = `✅ Found ${models.length} model(s)`;
+      statusEl.className = 'model-fetch-status success';
+    } catch (err) {
+      statusEl.textContent = `❌ ${err.message}`;
+      statusEl.className = 'model-fetch-status error';
+    } finally {
+      btn.classList.remove('loading');
+      btn.disabled = false;
+    }
   }
 
   // ═══════════════════════════════════════════════
@@ -1145,6 +1413,17 @@
 
         // Update temperature label
         updateTempLabel();
+
+        // Clear previous status messages
+        document.getElementById('connection-status').textContent = '';
+        document.getElementById('connection-status').className = 'connection-status';
+        document.getElementById('model-fetch-status').textContent = '';
+        document.getElementById('model-fetch-status').className = 'model-fetch-status';
+
+        // Auto-fetch models for local providers (Ollama, LM Studio)
+        if (provider === 'ollama' || provider === 'lmstudio') {
+          autoFetchModels();
+        }
       });
     });
 
@@ -1154,6 +1433,12 @@
         document.getElementById('modelName').value = e.target.value;
       }
     });
+
+    // ── Fetch Models button ──
+    document.getElementById('btn-fetch-models').addEventListener('click', autoFetchModels);
+
+    // ── Test Connection button ──
+    document.getElementById('btn-test-connection').addEventListener('click', testApiConnection);
 
     // ── History modal ──
     document.getElementById('btn-history').addEventListener('click', () => {
