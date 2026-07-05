@@ -43,10 +43,10 @@ API keys are stored only in your browser's localStorage — never sent anywhere 
 ## Features
 
 - **5 configurable modules** — Core Identity, Mechanics, Visual, Game Menu, Audio (each independently toggleable)
-- **10 genres** — Platformer, RPG, Puzzle, Shooter, Idle, Racing, Strategy, Roguelike, Simulation, Visual Novel
+- **11 genres** — Arcade Collector, Platformer, RPG, Puzzle, Shooter, Idle, Racing, Strategy, Roguelike, Simulation, Visual Novel
 - **Click-to-toggle mechanic tags** — Double Jump, Inventory, Health Bar, Gravity, Permadeath, Leveling, Crafting, Stealth, Procedural Generation, Physics, Dialogue, Collectibles
 - **Custom color palette** — Primary, Secondary, Background
-- **8 art styles** — Pixel Art, Minimalist Vector, ASCII, Low-Poly 3D, Hand-drawn, Flat Design, Retro CRT, Neon Glow
+- **8 art styles** — Pixel Art, Minimalist Vector, ASCII, Low-Poly 2D, Hand-drawn, Flat Design, Retro CRT, Neon Glow
 - **Mandatory game structure** — every game ships with Title Screen, Pause Menu (ESC), and Game Over screen
 - **Refine bar** — incrementally tweak the game without regenerating from scratch
 - **Prompt preview** — see and copy the assembled prompt before generating
@@ -195,7 +195,7 @@ After generating, use the **Refine bar** at the bottom of the sandbox:
 ### Core Identity
 | Field | Description |
 |-------|-------------|
-| **Genre** | Select from 10 genres: Platformer, RPG, Puzzle, Shooter, Idle, Racing, Strategy, Roguelike, Simulation, Visual Novel |
+| **Genre** | Select from 11 genres: Arcade Collector, Platformer, RPG, Puzzle, Shooter, Idle, Racing, Strategy, Roguelike, Simulation, Visual Novel |
 | **Setting / Theme** | Free text — describe your world (e.g. "Cyberpunk Neon City", "Medieval Forest") |
 | **Tone** | Slider from Dark/Gritty (0) to Bright/Whimsical (100) |
 
@@ -209,19 +209,19 @@ After generating, use the **Refine bar** at the bottom of the sandbox:
 ### Visual & Aesthetic
 | Field | Description |
 |-------|-------------|
-| **Art Style** | Pixel Art, Minimalist Vector, ASCII, Low-Poly 3D, Hand-drawn, Flat Design, Retro CRT, Neon Glow |
+| **Art Style** | Pixel Art, Minimalist Vector, ASCII, Low-Poly 2D, Hand-drawn, Flat Design, Retro CRT, Neon Glow |
 | **Color Palette** | Pick Primary, Secondary, and Background colors |
 | **Visual Effects** | Free text — describe VFX (e.g. "Screen shake on impact", "Particle explosions") |
 
 ### Game Menu & Controls
 | Field | Description |
 |-------|-------------|
-| **Menu Type** | Title Screen + Pause Menu, Title Screen Only, Minimal Overlay, No Menu |
-| **Menu Options** | Click-to-toggle: Start Game, Continue, Settings, How to Play, High Scores, Credits, Quit |
+| **Menu Type** | Complete Game Flow, Compact Full Flow |
+| **Menu Options** | Click-to-toggle: Start Game, Settings, How to Play, High Scores, Credits |
 | **HUD Elements** | Click-to-toggle: Score, Health Bar, Lives, Timer, Level Indicator, Minimap, Inventory Bar, Combo Counter |
-| **Standard Game Actions** | Click-to-toggle: Pause/Resume (ESC), Restart Level, Save Game, Load Game, Mute/Unmute, Back to Menu |
-| **Game Over Screen** | Score Summary + Retry, Simple Retry, Game Over Animation, Return to Menu |
-| **ESC Key Behavior** | Pause Game + Show Menu, Pause Game Only, Back to Title Screen, Nothing (disabled) |
+| **Standard Game Actions** | Click-to-toggle: Pause/Resume (ESC), Restart Game, Mute/Unmute, Back to Menu |
+| **Game Over Screen** | Score Summary + Retry, Simple Retry, Game Over Animation + Retry |
+| **ESC Key Behavior** | Pause Game + Show Menu |
 
 > **Note:** Every game is generated with mandatory structure: Title Screen, Pause Menu (ESC), and Game Over screen. The Game Menu module lets you customise these.
 

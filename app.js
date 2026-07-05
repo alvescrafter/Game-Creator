@@ -21,12 +21,12 @@
   // even if the user never touches the sidebar modules.
   const DEFAULT_STATE = {
     coreIdentity: {
-      genre: '',
+      genre: 'Arcade Collector',
       theme: '',
       tone: 50,
     },
     mechanics: {
-      tags: [],
+      tags: ['Health Bar', 'Collectibles'],
       rules: '',
       difficulty: '',
     },
@@ -38,9 +38,9 @@
       vfx: '',
     },
     gameMenu: {
-      menuType: 'Title Screen + Pause Menu',
+      menuType: 'Complete Game Flow',
       menuOptions: ['Start Game'],
-      hudElements: [],
+      hudElements: ['Score', 'Health Bar', 'Lives'],
       gameActions: ['Pause/Resume (ESC)', 'Back to Menu'],
       gameOverType: 'Score Summary + Retry',
       escBehavior: 'Pause Game + Show Menu',
@@ -57,6 +57,40 @@
     singleFile: true,
     assetHandling: 'Use placeholder colored rectangles and simple shapes',
     maxTokens: 50000,
+  };
+
+  const FALLBACK_GENRE = 'Arcade Collector';
+  const REQUIRED_MENU_OPTIONS = ['Start Game'];
+  const REQUIRED_GAME_ACTIONS = ['Pause/Resume (ESC)', 'Back to Menu'];
+  const REQUIRED_GAME_OVER_ACTIONS = ['Play Again / Retry'];
+  const SAFE_OPTIONAL_MENU_OPTIONS = ['Settings', 'How to Play', 'High Scores', 'Credits'];
+  const SAFE_OPTIONAL_GAME_ACTIONS = ['Restart Game', 'Restart Level', 'Mute/Unmute'];
+
+  const MECHANIC_REQUIREMENTS = {
+    'Double Jump': 'If jumping exists, add a double-jump counter that resets only after landing on solid ground.',
+    'Inventory System': 'Represent inventory as a small array/list in state; allow at least one pickup and one visible inventory HUD entry.',
+    'Health Bar': 'Track player health numerically, draw a readable health bar or HP text, and trigger GAME_OVER at zero.',
+    Gravity: 'Apply gravity every update, clamp falling speed, and resolve floor/platform collisions so the player cannot fall forever.',
+    Permadeath: 'When HP/lives reach zero, transition to GAME_OVER and reset only from the Retry/Play Again button.',
+    'Leveling Up': 'Track XP/progress, show level in the HUD, and increase at least one player stat or reward on level-up.',
+    Crafting: 'Include two collectible ingredients and one simple recipe that creates a useful item or score bonus.',
+    Stealth: 'Add enemy vision or patrol awareness and a visible alert/hidden state that affects player risk.',
+    'Procedural Generation': 'Generate the level/layout from deterministic arrays or simple random placement during resetGame().',
+    Physics: 'Use velocity, acceleration/friction, and collision response rather than teleport-style movement.',
+    'Dialogue System': 'Show dialogue in an HTML overlay or canvas text box, advanced by click/Space/Enter.',
+    Collectibles: 'Place collectible objects, detect overlap with the player, remove collected items, and increase score/progress.',
+  };
+
+  const VISUAL_STYLE_REQUIREMENTS = {
+    'Pixel Art': 'Use crisp blocky rectangles, disabled image smoothing, and a limited palette.',
+    'Minimalist Vector': 'Use clean geometric shapes, clear silhouettes, and restrained UI.',
+    ASCII: 'Use monospaced text motifs only as decoration or labels; keep the controllable player visibly drawn on canvas.',
+    'Low-Poly 2D': 'Use flat 2D low-poly facets on canvas; do not use WebGL, Three.js, or external libraries.',
+    'Low-Poly 3D': 'Interpret as flat 2D low-poly facets on canvas; do not use WebGL, Three.js, or external libraries.',
+    'Hand-drawn': 'Use imperfect strokes, sketch-like outlines, and organic shape variation.',
+    'Flat Design': 'Use flat shapes, solid colors, and strong contrast without asset dependencies.',
+    'Retro CRT': 'Add subtle scanlines/vignette CSS and chunky arcade colors while keeping text readable.',
+    'Neon Glow': 'Use bright strokes/shadows on dark backgrounds while preserving gameplay clarity.',
   };
 
   // ── Genre-Specific Implementation Requirements ──
@@ -149,12 +183,26 @@
       'Scene changes: background color or portrait changes when the scene shifts.',
       'Character names displayed above the dialogue text.',
     ],
+    [FALLBACK_GENRE]: [
+      'A player character that moves around the canvas with Arrow keys or WASD.',
+      'Collectible items that spawn in reachable positions and increase score when collected.',
+      'Hazards or enemies that move, patrol, or spawn over time and damage the player on collision.',
+      'A health/lives value displayed in the HUD, with GAME_OVER when it reaches zero.',
+      'A simple progression curve: spawn rate, hazard speed, or score target increases during play.',
+      'A clear win or milestone condition such as reaching a score target, surviving a timer, or clearing a wave.',
+    ],
   };
 
   // ── Genre-Based Sidebar Auto-Configuration ──
   // When a genre is selected, these defaults are applied to the sidebar modules.
   // The user can still toggle/override individual tags afterwards.
   const GENRE_DEFAULTS = {
+    [FALLBACK_GENRE]: {
+      mechanics: ['Health Bar', 'Collectibles'],
+      hudElements: ['Score', 'Health Bar', 'Lives'],
+      gameActions: ['Pause/Resume (ESC)', 'Back to Menu'],
+      menuOptions: ['Start Game', 'How to Play'],
+    },
     Shooter: {
       mechanics: ['Health Bar', 'Collectibles'],
       hudElements: ['Score', 'Health Bar', 'Lives'],
@@ -182,7 +230,7 @@
     Idle: {
       mechanics: ['Leveling Up'],
       hudElements: ['Score'],
-      gameActions: ['Back to Menu'],
+      gameActions: ['Pause/Resume (ESC)', 'Back to Menu'],
       menuOptions: ['Start Game'],
     },
     Racing: {
@@ -212,7 +260,7 @@
     'Visual Novel': {
       mechanics: ['Dialogue System'],
       hudElements: [],
-      gameActions: ['Back to Menu'],
+      gameActions: ['Pause/Resume (ESC)', 'Back to Menu'],
       menuOptions: ['Start Game'],
     },
   };
@@ -231,7 +279,7 @@
     mechanics: true,
     visuals: true,
     gameMenu: true,
-    audio: true,
+    audio: false,
   };
 
   // ── Provider Presets ──
@@ -341,6 +389,7 @@
     } catch (e) {
       console.warn('Failed to load state:', e);
     }
+    normalizeStateForReliability();
   }
 
   function saveApiSettings() {
@@ -414,9 +463,161 @@
     document.getElementById('loading-overlay').classList.add('hidden');
   }
 
+  function uniqueList(items) {
+    return [...new Set((items || []).filter(Boolean))];
+  }
+
+  function getGenerationPlan(enabled = {}) {
+    const selectedGenre = state.coreIdentity.genre;
+    const genre = selectedGenre || FALLBACK_GENRE;
+    const selectedMenuType = state.gameMenu.menuType || DEFAULT_STATE.gameMenu.menuType;
+    const selectedEscBehavior = state.gameMenu.escBehavior || DEFAULT_STATE.gameMenu.escBehavior;
+    const selectedGameOverType = state.gameMenu.gameOverType || DEFAULT_STATE.gameMenu.gameOverType;
+    const requestedMenuOptions = state.gameMenu.menuOptions || [];
+    const requestedGameActions = state.gameMenu.gameActions || [];
+    const unsafeMenuOptions = requestedMenuOptions.filter(option => (
+      !REQUIRED_MENU_OPTIONS.includes(option) && !SAFE_OPTIONAL_MENU_OPTIONS.includes(option)
+    ));
+    const unsafeGameActions = requestedGameActions.filter(action => (
+      !REQUIRED_GAME_ACTIONS.includes(action) && !SAFE_OPTIONAL_GAME_ACTIONS.includes(action)
+    ));
+
+    const menuOptions = uniqueList([
+      ...REQUIRED_MENU_OPTIONS,
+      ...requestedMenuOptions.filter(option => SAFE_OPTIONAL_MENU_OPTIONS.includes(option)),
+    ]);
+
+    const hudElements = uniqueList([
+      'Score',
+      ...(state.gameMenu.hudElements || []),
+    ]);
+
+    const gameActions = uniqueList([
+      ...REQUIRED_GAME_ACTIONS,
+      ...requestedGameActions.filter(action => SAFE_OPTIONAL_GAME_ACTIONS.includes(action)),
+      ...REQUIRED_GAME_OVER_ACTIONS,
+    ]);
+
+    const notes = [];
+
+    if (!selectedGenre) {
+      notes.push(`No genre selected: generate a compact ${FALLBACK_GENRE} game with movement, collectibles, hazards, scoring, and a game-over condition.`);
+    }
+
+    if (!enabled.gameMenu) {
+      notes.push('Game Menu module is disabled, but the mandatory Title, Pause, and Game Over screens still apply.');
+    }
+
+    if (selectedMenuType === 'Title Screen Only') {
+      notes.push('Menu Type "Title Screen Only" means the title is the only main menu; still include Pause and Game Over overlays.');
+    } else if (selectedMenuType === 'Minimal Overlay') {
+      notes.push('Menu Type "Minimal Overlay" means sparse styling; it must not remove required buttons or state transitions.');
+    } else if (selectedMenuType === 'Compact Full Flow') {
+      notes.push('Compact Full Flow means simple styling; it must still include Title, Pause, and Game Over screens.');
+    }
+
+    if (selectedEscBehavior && selectedEscBehavior !== 'Pause Game + Show Menu') {
+      notes.push(`ESC behavior "${selectedEscBehavior}" is normalized: ESC pauses and shows the Pause Menu; Back to Menu handles returning to title.`);
+    }
+
+    if (!(state.gameMenu.menuOptions || []).includes('Start Game')) {
+      notes.push('Start Game is required even if it is not selected in Menu Options.');
+    }
+
+    if (!(state.gameMenu.gameActions || []).includes('Pause/Resume (ESC)')) {
+      notes.push('Pause/Resume (ESC) is required even if it is not selected in Standard Game Actions.');
+    }
+
+    if (!(state.gameMenu.gameActions || []).includes('Back to Menu')) {
+      notes.push('Back to Menu is required even if it is not selected in Standard Game Actions.');
+    }
+
+    if (selectedGameOverType === 'Return to Menu') {
+      notes.push('Game Over may include Return to Menu, but it must also include Play Again / Retry.');
+    }
+
+    if (unsafeMenuOptions.length > 0) {
+      notes.push(`Ignored fragile menu option(s) for reliability: ${unsafeMenuOptions.join(', ')}.`);
+    }
+
+    if (unsafeGameActions.length > 0) {
+      notes.push(`Ignored fragile game action(s) for reliability: ${unsafeGameActions.join(', ')}.`);
+    }
+
+    return {
+      genre,
+      selectedGenre,
+      menuType: selectedMenuType,
+      menuOptions,
+      hudElements,
+      gameActions,
+      gameOverType: selectedGameOverType,
+      escBehavior: 'Pause Game + Show Menu',
+      requestedEscBehavior: selectedEscBehavior,
+      notes,
+    };
+  }
+
   // ═══════════════════════════════════════════════
   // PROMPT ASSEMBLER
   // ═══════════════════════════════════════════════
+
+  function normalizeStateForReliability() {
+    state = {
+      ...deepClone(DEFAULT_STATE),
+      ...state,
+      coreIdentity: { ...deepClone(DEFAULT_STATE.coreIdentity), ...(state.coreIdentity || {}) },
+      mechanics: { ...deepClone(DEFAULT_STATE.mechanics), ...(state.mechanics || {}) },
+      visuals: { ...deepClone(DEFAULT_STATE.visuals), ...(state.visuals || {}) },
+      gameMenu: { ...deepClone(DEFAULT_STATE.gameMenu), ...(state.gameMenu || {}) },
+      audio: { ...deepClone(DEFAULT_STATE.audio), ...(state.audio || {}) },
+    };
+
+    if (!state.coreIdentity.genre) state.coreIdentity.genre = FALLBACK_GENRE;
+    if (state.visuals.artStyle === 'Low-Poly 3D') state.visuals.artStyle = 'Low-Poly 2D';
+
+    const menuTypeMap = {
+      'Title Screen + Pause Menu': 'Complete Game Flow',
+      'Title Screen Only': 'Complete Game Flow',
+      'Minimal Overlay': 'Compact Full Flow',
+      'No Menu': 'Complete Game Flow',
+    };
+    state.gameMenu.menuType = menuTypeMap[state.gameMenu.menuType] || state.gameMenu.menuType || DEFAULT_STATE.gameMenu.menuType;
+
+    const gameOverMap = {
+      'Game Over Animation': 'Game Over Animation + Retry',
+      'Return to Menu': 'Score Summary + Retry',
+    };
+    state.gameMenu.gameOverType = gameOverMap[state.gameMenu.gameOverType] || state.gameMenu.gameOverType || DEFAULT_STATE.gameMenu.gameOverType;
+    state.gameMenu.escBehavior = 'Pause Game + Show Menu';
+
+    state.gameMenu.menuOptions = uniqueList([
+      ...REQUIRED_MENU_OPTIONS,
+      ...(state.gameMenu.menuOptions || []).filter(option => SAFE_OPTIONAL_MENU_OPTIONS.includes(option)),
+    ]);
+
+    const mappedActions = (state.gameMenu.gameActions || []).map(action => (
+      action === 'Restart Level' ? 'Restart Game' : action
+    ));
+    state.gameMenu.gameActions = uniqueList([
+      ...REQUIRED_GAME_ACTIONS,
+      ...mappedActions.filter(action => SAFE_OPTIONAL_GAME_ACTIONS.includes(action)),
+    ]);
+
+    if (!state.gameMenu.hudElements || state.gameMenu.hudElements.length === 0) {
+      state.gameMenu.hudElements = [...DEFAULT_STATE.gameMenu.hudElements];
+    } else if (!state.gameMenu.hudElements.includes('Score')) {
+      state.gameMenu.hudElements = uniqueList(['Score', ...state.gameMenu.hudElements]);
+    }
+
+    if (state.coreIdentity.genre === FALLBACK_GENRE && (!state.mechanics.tags || state.mechanics.tags.length === 0)) {
+      state.mechanics.tags = [...DEFAULT_STATE.mechanics.tags];
+    }
+
+    if (moduleEnabled.audio && !state.audio.musicMood && !state.audio.sfx) {
+      moduleEnabled.audio = false;
+    }
+  }
 
   function assemblePrompt() {
     const enabled = {};
@@ -425,6 +626,8 @@
     document.querySelectorAll('.module-toggle').forEach(cb => {
       enabled[cb.dataset.moduleKey] = cb.checked;
     });
+
+    const plan = getGenerationPlan(enabled);
 
     // ═════════════════════════════════════════════
     // SYSTEM PROMPT — Prescriptive, non-negotiable rules
@@ -438,6 +641,15 @@
     systemPrompt += '\n3. The entire game code MUST be below 50,000 tokens. Keep it concise but fully functional.';
     systemPrompt += '\n4. Use placeholder colored rectangles and simple shapes for all graphics — no image assets needed.';
     systemPrompt += '\n5. The game must be immediately playable with no setup, no loading screens, no external dependencies.';
+
+    // Playability guardrails keep sidebar choices from weakening the required game structure.
+    systemPrompt += '\n\nCORE PLAYABILITY CONTRACT (ALWAYS ACTIVE)';
+    systemPrompt += '\n- Sidebar options are additive preferences. They must NEVER remove the mandatory Title Screen, Pause Menu, Game Over screen, controls, HUD, player, game loop, or reset flow.';
+    systemPrompt += '\n- If any sidebar option conflicts with this contract, satisfy the contract first and interpret the option as a styling or secondary-flow preference.';
+    systemPrompt += '\n- The game must include a clear objective, a score/progress value that can change, at least one failure or completion condition, and a way to restart without reloading the page.';
+    systemPrompt += '\n- Optional buttons such as Settings, How to Play, High Scores, Credits, Restart, and Mute must be lightweight in-game UI actions. Do not use browser-only behavior like window.close(), external pages, or server storage.';
+    systemPrompt += '\n- If a requested mechanic is not natural for the genre, adapt it into a small compatible variant instead of letting it replace the core genre loop.';
+    systemPrompt += '\n- If no genre is provided, create a compact arcade collector/dodger game with movement, collectibles, hazards, score, lives/health, and game over.';
 
     // ── MANDATORY PLAYER ENTITY ──
     systemPrompt += '\n\n═══ MANDATORY PLAYER ENTITY ═══';
@@ -500,7 +712,7 @@
     systemPrompt += '\n- Listen for the Escape key (keydown) during PLAYING state to transition to PAUSED.';
 
     // ── Genre-Specific Requirements ──
-    const genre = state.coreIdentity.genre;
+    const genre = plan.genre;
     if (genre && GENRE_REQUIREMENTS[genre]) {
       systemPrompt += `\n\n═══ MANDATORY ${genre.toUpperCase()} REQUIREMENTS ═══`;
       systemPrompt += `\nBecause the genre is "${genre}", the game MUST include ALL of the following:`;
@@ -526,10 +738,25 @@
       userPrompt += '\n';
     }
 
+    if (!enabled.coreIdentity || !state.coreIdentity.genre) {
+      userPrompt += '**Generation Baseline:**\n';
+      userPrompt += `- Active Genre: ${plan.genre}\n`;
+      userPrompt += '- Build a complete playable loop with objective, scoring/progress, danger/failure, restart, and clear controls.\n';
+      userPrompt += '\n';
+    }
+
     if (enabled.mechanics) {
       userPrompt += '**Gameplay Mechanics:**\n';
       if (state.mechanics.tags.length > 0) {
         userPrompt += `- Mechanics: ${state.mechanics.tags.join(', ')}\n`;
+        userPrompt += '- Mechanic Implementation Details:\n';
+        state.mechanics.tags.forEach(tag => {
+          if (MECHANIC_REQUIREMENTS[tag]) {
+            userPrompt += `  - ${tag}: ${MECHANIC_REQUIREMENTS[tag]}\n`;
+          }
+        });
+      } else {
+        userPrompt += '- Required Core Mechanic: movement plus the primary interaction required by the active genre.\n';
       }
       if (state.mechanics.rules) {
         userPrompt += `- Specific Rules: ${state.mechanics.rules}\n`;
@@ -543,6 +770,9 @@
     if (enabled.visuals) {
       userPrompt += '**Visual Requirements:**\n';
       if (state.visuals.artStyle) userPrompt += `- Art Style: ${state.visuals.artStyle}\n`;
+      if (state.visuals.artStyle && VISUAL_STYLE_REQUIREMENTS[state.visuals.artStyle]) {
+        userPrompt += `- Style Implementation: ${VISUAL_STYLE_REQUIREMENTS[state.visuals.artStyle]}\n`;
+      }
       userPrompt += `- Color Palette: Primary ${state.visuals.colorPrimary}, Secondary ${state.visuals.colorSecondary}, Background ${state.visuals.colorBg}\n`;
       if (state.visuals.vfx) userPrompt += `- Visual Effects: ${state.visuals.vfx}\n`;
       userPrompt += '\n';
@@ -550,18 +780,20 @@
 
     if (enabled.gameMenu) {
       userPrompt += '**Game Menu & Controls:**\n';
-      if (state.gameMenu.menuType) userPrompt += `- Menu Type: ${state.gameMenu.menuType}\n`;
-      if (state.gameMenu.menuOptions.length > 0) {
-        userPrompt += `- Menu Options: ${state.gameMenu.menuOptions.join(', ')}\n`;
-      }
-      if (state.gameMenu.hudElements.length > 0) {
-        userPrompt += `- HUD Elements: ${state.gameMenu.hudElements.join(', ')}\n`;
-      }
-      if (state.gameMenu.gameActions.length > 0) {
-        userPrompt += `- Standard Game Actions: ${state.gameMenu.gameActions.join(', ')}\n`;
-      }
-      if (state.gameMenu.gameOverType) userPrompt += `- Game Over Screen: ${state.gameMenu.gameOverType}\n`;
-      if (state.gameMenu.escBehavior) userPrompt += `- ESC Key Behavior: ${state.gameMenu.escBehavior}\n`;
+      userPrompt += `- Requested Menu Type: ${plan.menuType}\n`;
+      userPrompt += `- Effective Menu Options: ${plan.menuOptions.join(', ')}\n`;
+      userPrompt += `- Effective HUD Elements: ${plan.hudElements.join(', ')}\n`;
+      userPrompt += `- Effective Standard Game Actions: ${plan.gameActions.join(', ')}\n`;
+      userPrompt += `- Game Over Screen: ${plan.gameOverType}; must include Play Again / Retry.\n`;
+      userPrompt += `- ESC Key Behavior: ${plan.escBehavior}\n`;
+      userPrompt += '\n';
+    }
+
+    if (plan.notes.length > 0) {
+      userPrompt += '**Sidebar Compatibility Notes:**\n';
+      plan.notes.forEach(note => {
+        userPrompt += `- ${note}\n`;
+      });
       userPrompt += '\n';
     }
 
@@ -570,12 +802,14 @@
     userPrompt += `- Framework: ${TECH_DEFAULTS.framework}\n`;
     userPrompt += `- Single File: Yes\n`;
     userPrompt += `- Asset Handling: ${TECH_DEFAULTS.assetHandling}\n`;
+    userPrompt += '- Do not use external images, fonts, scripts, stylesheets, audio files, or network calls.\n';
     userPrompt += '\n';
 
     if (enabled.audio) {
       userPrompt += '**Audio & Soundscape:**\n';
       if (state.audio.musicMood) userPrompt += `- Music Mood: ${state.audio.musicMood}\n`;
       if (state.audio.sfx) userPrompt += `- SFX Requirements: ${state.audio.sfx}\n`;
+      userPrompt += '- Audio Implementation: optional Web Audio API oscillator/noise effects only, initialized after a user click/key press so autoplay restrictions do not block gameplay.\n';
       userPrompt += '\n';
     }
 
@@ -586,6 +820,7 @@
     userPrompt += '- Make the game immediately playable with no additional setup.\n';
     userPrompt += '- Add clear visual feedback for all player actions (movement, collisions, score changes).\n';
     userPrompt += '- Include a HUD showing score/health/lives/timer as applicable.\n';
+    userPrompt += '- Treat sidebar choices as additive; do not omit required states, buttons, input handlers, reset logic, or game-over flow because of a selected menu preference.\n';
     userPrompt += '\n';
     userPrompt += '**COMPLETENESS CHECKLIST — verify before outputting:**\n';
     userPrompt += 'Before you output the code, mentally verify your game includes ALL of the following:\n';
@@ -675,11 +910,16 @@
 
   function checkConflicts() {
     const conflicts = [];
+    const plan = getGenerationPlan(moduleEnabled);
 
     // Permadeath + Idle (unusual combo)
     if (state.mechanics.tags.includes('Permadeath') && state.coreIdentity.genre === 'Idle') {
       conflicts.push('Permadeath in an Idle game can be frustrating. Consider removing one or the other.');
     }
+
+    plan.notes.filter(note => !note.startsWith('No genre selected')).forEach(note => {
+      conflicts.push(`Generation safety: ${note}`);
+    });
 
     return conflicts;
   }
@@ -1133,6 +1373,13 @@
       { pattern: /keydown|keyup/i, label: 'keyboard input handling (keydown/keyup)' },
       { pattern: /ctx\./i, label: 'canvas rendering calls (ctx.)' },
       { pattern: /<button|createElement\s*\(\s*['"]button/i, label: 'HTML buttons for menus' },
+      { pattern: /btn-start|startGame|start-game/i, label: 'working Start Game button/handler' },
+      { pattern: /btn-resume|resumeGame|resume-game/i, label: 'working Resume button/handler' },
+      { pattern: /btn-menu|backToMenu|back-to-menu/i, label: 'working Back to Menu button/handler' },
+      { pattern: /btn-retry|retry|playAgain|play-again/i, label: 'working Retry/Play Again button/handler' },
+      { pattern: /TITLE/i, label: 'TITLE state' },
+      { pattern: /PAUSED|pause/i, label: 'PAUSED state' },
+      { pattern: /GAME_OVER|gameOver|game-over/i, label: 'GAME_OVER state' },
     ];
 
     checks.forEach(check => {
@@ -1327,6 +1574,7 @@
     // Restore config
     state = { ...deepClone(DEFAULT_STATE), ...item.config };
     moduleEnabled = { ...deepClone(DEFAULT_MODULE_ENABLED), ...item.moduleEnabled };
+    normalizeStateForReliability();
 
     // Restore code to iframe
     if (item.code) {
@@ -1411,6 +1659,7 @@
 
     state = { ...deepClone(DEFAULT_STATE), ...item.config };
     moduleEnabled = { ...deepClone(DEFAULT_MODULE_ENABLED), ...item.moduleEnabled };
+    normalizeStateForReliability();
 
     syncUIFromState();
     updatePromptPreview();

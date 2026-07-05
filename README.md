@@ -35,10 +35,10 @@ API keys are stored only in your browser's localStorage — never sent anywhere 
 ## ✨ Features
 
 - **5 configurable modules** — Core Identity, Mechanics, Visual, Game Menu, Audio (each independently toggleable)
-- **10 genres** — Platformer, RPG, Puzzle, Shooter, Idle, Racing, Strategy, Roguelike, Simulation, Visual Novel
+- **11 genres** — Arcade Collector, Platformer, RPG, Puzzle, Shooter, Idle, Racing, Strategy, Roguelike, Simulation, Visual Novel
 - **Click-to-toggle mechanic tags** — Double Jump, Inventory, Health Bar, Gravity, Permadeath, Leveling, Crafting, Stealth, Procedural Generation, Physics, Dialogue, Collectibles
 - **Custom color palette** — Primary, Secondary, Background
-- **8 art styles** — Pixel Art, Minimalist Vector, ASCII, Low-Poly 3D, Hand-drawn, Flat Design, Retro CRT, Neon Glow
+- **8 art styles** — Pixel Art, Minimalist Vector, ASCII, Low-Poly 2D, Hand-drawn, Flat Design, Retro CRT, Neon Glow
 - **Mandatory game structure** — every game ships with Title Screen, Pause Menu (ESC), and Game Over screen
 - **Refine bar** — incrementally tweak the game without regenerating from scratch
 - **Prompt preview** — see and copy the assembled prompt before generating

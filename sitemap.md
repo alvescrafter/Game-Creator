@@ -26,9 +26,9 @@
 - [agent-skills/game-generation/SKILL.md](https://aigamecreator.netlify.app/.well-known/agent-skills/game-generation/SKILL.md) — Game generation skill description
 
 ## Features
-- 10 game genres: Platformer, RPG, Puzzle, Shooter, Idle, Racing, Strategy, Roguelike, Simulation, Visual Novel
+- 11 game genres: Arcade Collector, Platformer, RPG, Puzzle, Shooter, Idle, Racing, Strategy, Roguelike, Simulation, Visual Novel
 - 12 game mechanics: Double Jump, Inventory, Health Bar, Gravity, Permadeath, Leveling, Crafting, Stealth, Procedural Generation, Physics, Dialogue, Collectibles
-- 8 art styles: Pixel Art, Minimalist Vector, ASCII, Low-Poly 3D, Hand-drawn, Flat Design, Retro CRT, Neon Glow
+- 8 art styles: Pixel Art, Minimalist Vector, ASCII, Low-Poly 2D, Hand-drawn, Flat Design, Retro CRT, Neon Glow
 - 5 AI providers: OpenAI, Gemini, Claude, Ollama, LM Studio
 - Refine bar, history (50 games), templates, download, fullscreen, dark/light theme
 

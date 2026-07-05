@@ -87,7 +87,7 @@
         "properties": {
           "genre": {
             "type": "string",
-            "enum": ["Platformer", "RPG", "Puzzle", "Shooter", "Idle", "Racing", "Strategy", "Roguelike", "Simulation", "Visual Novel"],
+            "enum": ["Arcade Collector", "Platformer", "RPG", "Puzzle", "Shooter", "Idle", "Racing", "Strategy", "Roguelike", "Simulation", "Visual Novel"],
             "description": "The game genre."
           },
           "setting_theme": {
@@ -119,7 +119,7 @@
           },
           "art_style": {
             "type": "string",
-            "enum": ["Pixel Art", "Minimalist Vector", "ASCII", "Low-Poly 3D", "Hand-drawn", "Flat Design", "Retro CRT", "Neon Glow"],
+            "enum": ["Pixel Art", "Minimalist Vector", "ASCII", "Low-Poly 2D", "Hand-drawn", "Flat Design", "Retro CRT", "Neon Glow"],
             "description": "Visual art style for the game."
           },
           "color_primary": {
@@ -140,14 +140,14 @@
           },
           "menu_type": {
             "type": "string",
-            "enum": ["Title Screen + Pause Menu", "Title Screen Only", "Minimal Overlay", "No Menu"],
+            "enum": ["Complete Game Flow", "Compact Full Flow"],
             "description": "Menu structure type."
           },
           "menu_options": {
             "type": "array",
             "items": {
               "type": "string",
-              "enum": ["Start Game", "Continue", "Settings", "How to Play", "High Scores", "Credits", "Quit"]
+              "enum": ["Start Game", "Settings", "How to Play", "High Scores", "Credits"]
             },
             "description": "Menu options to include."
           },
@@ -163,18 +163,18 @@
             "type": "array",
             "items": {
               "type": "string",
-              "enum": ["Pause/Resume (ESC)", "Restart Level", "Save Game", "Load Game", "Mute/Unmute", "Back to Menu"]
+              "enum": ["Pause/Resume (ESC)", "Restart Game", "Mute/Unmute", "Back to Menu"]
             },
             "description": "Standard game actions available to the player."
           },
           "game_over_screen": {
             "type": "string",
-            "enum": ["Score Summary + Retry", "Simple Retry", "Game Over Animation", "Return to Menu"],
+            "enum": ["Score Summary + Retry", "Simple Retry", "Game Over Animation + Retry"],
             "description": "Game over screen style."
           },
           "esc_behavior": {
             "type": "string",
-            "enum": ["Pause Game + Show Menu", "Pause Game Only", "Back to Title Screen", "Nothing (disabled)"],
+            "enum": ["Pause Game + Show Menu"],
             "description": "What happens when ESC is pressed."
           },
           "music_mood": {

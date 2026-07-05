@@ -63,9 +63,9 @@
           "priceCurrency": "USD"
         },
         "featureList": [
-          "10 game genres: Platformer, RPG, Puzzle, Shooter, Idle, Racing, Strategy, Roguelike, Simulation, Visual Novel",
+          "11 game genres: Arcade Collector, Platformer, RPG, Puzzle, Shooter, Idle, Racing, Strategy, Roguelike, Simulation, Visual Novel",
           "12 toggleable game mechanics: Double Jump, Inventory, Health Bar, Gravity, Permadeath, Leveling, Crafting, Stealth, Procedural Generation, Physics, Dialogue, Collectibles",
-          "8 art styles: Pixel Art, Minimalist Vector, ASCII, Low-Poly 3D, Hand-drawn, Flat Design, Retro CRT, Neon Glow",
+          "8 art styles: Pixel Art, Minimalist Vector, ASCII, Low-Poly 2D, Hand-drawn, Flat Design, Retro CRT, Neon Glow",
           "Custom color palette with primary, secondary, and background colors",
           "Game menu and HUD configuration",
           "Audio and soundscape settings",
@@ -162,7 +162,7 @@
         "name": "What game genres are available?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "AI Game Creator supports 10 game genres: Platformer, RPG, Puzzle, Shooter, Idle, Racing, Strategy, Roguelike, Simulation, and Visual Novel. Each genre has mandatory structural requirements (Title Screen, Pause Menu, Game Over screen) plus configurable mechanics, art style, and audio."
+          "text": "AI Game Creator supports 11 game genres: Arcade Collector, Platformer, RPG, Puzzle, Shooter, Idle, Racing, Strategy, Roguelike, Simulation, and Visual Novel. Each genre has mandatory structural requirements (Title Screen, Pause Menu, Game Over screen) plus configurable mechanics, art style, and audio."
         }
       },
       {
@@ -290,7 +290,7 @@
           <div class="field-group">
             <label for="genre" class="field-label">Genre</label>
             <select id="genre" class="field-select" data-path="coreIdentity.genre">
-              <option value="">— Select Genre —</option>
+              <option value="Arcade Collector">Arcade Collector</option>
               <option value="Platformer">Platformer</option>
               <option value="RPG">RPG</option>
               <option value="Puzzle">Puzzle</option>
@@ -398,7 +398,7 @@
               <option value="Pixel Art">Pixel Art</option>
               <option value="Minimalist Vector">Minimalist Vector</option>
               <option value="ASCII">ASCII Art</option>
-              <option value="Low-Poly 3D">Low-Poly 3D</option>
+              <option value="Low-Poly 2D">Low-Poly 2D</option>
               <option value="Hand-drawn">Hand-drawn</option>
               <option value="Flat Design">Flat Design</option>
               <option value="Retro CRT">Retro CRT</option>
@@ -450,10 +450,8 @@
           <div class="field-group">
             <label for="menuType" class="field-label">Menu Type</label>
             <select id="menuType" class="field-select" data-path="gameMenu.menuType">
-              <option value="">— Select Menu Type —</option>
-              <option value="Title Screen + Pause Menu">Title Screen + Pause Menu</option>
-              <option value="Title Screen Only">Title Screen Only</option>
-              <option value="Minimal Overlay">Minimal Overlay</option>
+              <option value="Complete Game Flow">Complete Game Flow</option>
+              <option value="Compact Full Flow">Compact Full Flow</option>
             </select>
           </div>
 
@@ -461,12 +459,10 @@
             <label class="field-label">Menu Options <span class="field-hint">(click to toggle)</span></label>
             <div id="menuOptions-tags" class="tag-grid">
               <button class="tag-btn" data-value="Start Game">Start Game</button>
-              <button class="tag-btn" data-value="Continue">Continue</button>
               <button class="tag-btn" data-value="Settings">Settings</button>
               <button class="tag-btn" data-value="How to Play">How to Play</button>
               <button class="tag-btn" data-value="High Scores">High Scores</button>
               <button class="tag-btn" data-value="Credits">Credits</button>
-              <button class="tag-btn" data-value="Quit">Quit</button>
             </div>
           </div>
 
@@ -488,9 +484,7 @@
             <label class="field-label">Standard Game Actions <span class="field-hint">(click to toggle)</span></label>
             <div id="gameActions-tags" class="tag-grid">
               <button class="tag-btn" data-value="Pause/Resume (ESC)">Pause/Resume (ESC)</button>
-              <button class="tag-btn" data-value="Restart Level">Restart Level</button>
-              <button class="tag-btn" data-value="Save Game">Save Game</button>
-              <button class="tag-btn" data-value="Load Game">Load Game</button>
+              <button class="tag-btn" data-value="Restart Game">Restart Game</button>
               <button class="tag-btn" data-value="Mute/Unmute">Mute/Unmute</button>
               <button class="tag-btn" data-value="Back to Menu">Back to Menu</button>
             </div>
@@ -499,21 +493,16 @@
           <div class="field-group">
             <label for="gameOverType" class="field-label">Game Over Screen</label>
             <select id="gameOverType" class="field-select" data-path="gameMenu.gameOverType">
-              <option value="">— Select —</option>
               <option value="Score Summary + Retry">Score Summary + Retry</option>
               <option value="Simple Retry">Simple Retry</option>
-              <option value="Game Over Animation">Game Over Animation</option>
-              <option value="Return to Menu">Return to Menu</option>
+              <option value="Game Over Animation + Retry">Game Over Animation + Retry</option>
             </select>
           </div>
 
           <div class="field-group">
             <label for="escBehavior" class="field-label">ESC Key Behavior</label>
             <select id="escBehavior" class="field-select" data-path="gameMenu.escBehavior">
-              <option value="">— Select —</option>
               <option value="Pause Game + Show Menu">Pause Game + Show Menu</option>
-              <option value="Pause Game Only">Pause Game Only</option>
-              <option value="Back to Title Screen">Back to Title Screen</option>
             </select>
           </div>
 
@@ -527,7 +516,7 @@
           <span class="module-icon">🔊</span>
           <span class="module-title">Audio & Soundscape</span>
           <label class="toggle-wrap" onclick="event.stopPropagation()">
-            <input type="checkbox" class="module-toggle" data-module-key="audio" checked>
+            <input type="checkbox" class="module-toggle" data-module-key="audio">
             <span class="toggle-switch"></span>
           </label>
         </summary>

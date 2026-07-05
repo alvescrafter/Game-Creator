@@ -11,9 +11,9 @@
 - [Educational Games](https://aigamecreatorlearn.netlify.app/): Educational games built with the tool
 
 ## Features
-- 10 game genres: Platformer, RPG, Puzzle, Shooter, Idle, Racing, Strategy, Roguelike, Simulation, Visual Novel
+- 11 game genres: Arcade Collector, Platformer, RPG, Puzzle, Shooter, Idle, Racing, Strategy, Roguelike, Simulation, Visual Novel
 - 12 toggleable game mechanics: Double Jump, Inventory, Health Bar, Gravity, Permadeath, Leveling, Crafting, Stealth, Procedural Generation, Physics, Dialogue, Collectibles
-- 8 art styles: Pixel Art, Minimalist Vector, ASCII, Low-Poly 3D, Hand-drawn, Flat Design, Retro CRT, Neon Glow
+- 8 art styles: Pixel Art, Minimalist Vector, ASCII, Low-Poly 2D, Hand-drawn, Flat Design, Retro CRT, Neon Glow
 - Custom color palette: primary, secondary, background
 - Game menu and HUD configuration (menu type, menu options, HUD elements, game actions, game over screen, ESC behavior)
 - Audio and soundscape settings (music mood, SFX requirements)

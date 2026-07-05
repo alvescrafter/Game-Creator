@@ -53,7 +53,7 @@ After generating, use the **Refine bar** at the bottom of the sandbox:
 ### 🎯 Core Identity
 | Field | Description |
 |-------|-------------|
-| **Genre** | Select from 10 genres: Platformer, RPG, Puzzle, Shooter, Idle, Racing, Strategy, Roguelike, Simulation, Visual Novel |
+| **Genre** | Select from 11 genres: Arcade Collector, Platformer, RPG, Puzzle, Shooter, Idle, Racing, Strategy, Roguelike, Simulation, Visual Novel |
 | **Setting / Theme** | Free text — describe your world (e.g. "Cyberpunk Neon City", "Medieval Forest") |
 | **Tone** | Slider from 🌑 Dark/Gritty (0) to Bright/Whimsical (100) |
 
@@ -67,19 +67,19 @@ After generating, use the **Refine bar** at the bottom of the sandbox:
 ### 🎨 Visual & Aesthetic
 | Field | Description |
 |-------|-------------|
-| **Art Style** | Pixel Art, Minimalist Vector, ASCII, Low-Poly 3D, Hand-drawn, Flat Design, Retro CRT, Neon Glow |
+| **Art Style** | Pixel Art, Minimalist Vector, ASCII, Low-Poly 2D, Hand-drawn, Flat Design, Retro CRT, Neon Glow |
 | **Color Palette** | Pick Primary, Secondary, and Background colors |
 | **Visual Effects** | Free text — describe VFX (e.g. "Screen shake on impact", "Particle explosions") |
 
 ### 🕹️ Game Menu & Controls
 | Field | Description |
 |-------|-------------|
-| **Menu Type** | Title Screen + Pause Menu, Title Screen Only, Minimal Overlay, No Menu |
-| **Menu Options** | Click-to-toggle: Start Game, Continue, Settings, How to Play, High Scores, Credits, Quit |
+| **Menu Type** | Complete Game Flow, Compact Full Flow |
+| **Menu Options** | Click-to-toggle: Start Game, Settings, How to Play, High Scores, Credits |
 | **HUD Elements** | Click-to-toggle: Score, Health Bar, Lives, Timer, Level Indicator, Minimap, Inventory Bar, Combo Counter |
-| **Standard Game Actions** | Click-to-toggle: Pause/Resume (ESC), Restart Level, Save Game, Load Game, Mute/Unmute, Back to Menu |
-| **Game Over Screen** | Score Summary + Retry, Simple Retry, Game Over Animation, Return to Menu |
-| **ESC Key Behavior** | Pause Game + Show Menu, Pause Game Only, Back to Title Screen, Nothing (disabled) |
+| **Standard Game Actions** | Click-to-toggle: Pause/Resume (ESC), Restart Game, Mute/Unmute, Back to Menu |
+| **Game Over Screen** | Score Summary + Retry, Simple Retry, Game Over Animation + Retry |
+| **ESC Key Behavior** | Pause Game + Show Menu |
 
 > **Note:** Every game is generated with mandatory structure: Title Screen, Pause Menu (ESC), and Game Over screen. The Game Menu module lets you customise these.
 

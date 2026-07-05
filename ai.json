@@ -125,7 +125,7 @@
     {
       "name": "game-generation",
       "description": "Generate complete HTML5 games from modular design parameters using AI",
-      "inputs": ["genre", "mechanics", "art_style", "color_palette", "menu_type", "hud_elements", "audio_mood", "setting_theme", "tone", "difficulty_curve", "framework", "max_tokens"],
+      "inputs": ["genre", "mechanics", "art_style", "color_palette", "menu_type", "menu_options", "hud_elements", "game_actions", "game_over_screen", "esc_behavior", "audio_mood", "setting_theme", "tone", "difficulty_curve"],
       "outputs": ["self-contained HTML5 game file"]
     },
     {
@@ -148,5 +148,5 @@
     "build_tools": [],
     "architecture": "client-side single-page application, no backend"
   },
-  "last_updated": "2026-06-19"
+  "last_updated": "2026-07-05"
 }
