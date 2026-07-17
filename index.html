@@ -547,6 +547,41 @@
         </div>
       </details>
 
+      <!-- Output Mode Toggle -->
+      <details class="module-card output-mode-card" open>
+        <summary class="module-header">
+          <span class="module-icon">📦</span>
+          <span class="module-title">Output Mode</span>
+        </summary>
+        <div class="module-body">
+          <p class="module-desc">Choose how the AI delivers your game files.</p>
+          <div class="field-group">
+            <div class="output-mode-toggle">
+              <label class="output-mode-option">
+                <input type="radio" name="outputMode" value="single" checked>
+                <span class="output-mode-label">
+                  <span class="output-mode-icon">📄</span>
+                  <span class="output-mode-text">
+                    <strong>Single File</strong>
+                    <small>One self-contained .html file</small>
+                  </span>
+                </span>
+              </label>
+              <label class="output-mode-option">
+                <input type="radio" name="outputMode" value="multi">
+                <span class="output-mode-label">
+                  <span class="output-mode-icon">📁</span>
+                  <span class="output-mode-text">
+                    <strong>Multi-File</strong>
+                    <small>index.html + style.css + game.js (ZIP download)</small>
+                  </span>
+                </span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </details>
+
     </aside>
 
     <!-- ──────── MAIN: Preview & Sandbox ──────── -->
@@ -556,6 +591,8 @@
       <div id="main-tabs">
         <button class="tab-btn active" data-tab="preview">📝 Prompt Preview</button>
         <button class="tab-btn" data-tab="sandbox">🎮 Game Sandbox</button>
+        <button class="tab-btn" data-tab="files" id="tab-files" style="display:none;">📂 Files</button>
+        <button class="tab-btn" data-tab="liveview" id="tab-liveview">👁️ Live View</button>
       </div>
 
       <!-- Prompt Preview Panel -->
@@ -605,6 +642,60 @@
           <input type="text" id="refine-input" class="refine-input"
                  placeholder='Refine: e.g. "Make the player move faster", "Add a score counter"'>
           <button id="btn-refine" class="btn btn-secondary" title="Send refinement (Enter)">🔄 Refine</button>
+        </div>
+      </section>
+
+      <!-- File Browser Panel (Multi-File Mode) -->
+      <section id="panel-files" class="tab-panel">
+        <div class="panel-toolbar">
+          <span class="panel-title">Generated Files</span>
+          <div class="toolbar-actions">
+            <button id="btn-download-zip" class="btn btn-sm" title="Download all files as ZIP">💾 Download ZIP</button>
+          </div>
+        </div>
+        <div id="file-browser" class="file-browser">
+          <div id="file-list" class="file-list">
+            <p class="placeholder">No files yet. Generate a multi-file game to see files here.</p>
+          </div>
+          <div id="file-viewer" class="file-viewer">
+            <div id="file-viewer-header" class="file-viewer-header">
+              <span id="file-viewer-path" class="file-viewer-path">Select a file to view</span>
+              <span id="file-viewer-meta" class="file-viewer-meta"></span>
+            </div>
+            <pre id="file-viewer-content" class="file-viewer-content"></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- Live View Panel (LLM streaming output) -->
+      <section id="panel-liveview" class="tab-panel">
+        <div class="panel-toolbar">
+          <span class="panel-title">Live AI Output</span>
+          <div class="toolbar-actions">
+            <span id="liveview-status" class="liveview-status">Idle</span>
+            <button id="btn-clear-liveview" class="btn btn-sm" title="Clear output">🗑️ Clear</button>
+          </div>
+        </div>
+        <div id="liveview-container" class="liveview-container">
+          <div id="liveview-thinking" class="liveview-section liveview-thinking hidden">
+            <div class="liveview-section-header">
+              <span class="liveview-section-icon">💭</span>
+              <span class="liveview-section-title">AI Thinking</span>
+            </div>
+            <pre id="liveview-thinking-content" class="liveview-content"></pre>
+          </div>
+          <div id="liveview-code" class="liveview-section liveview-code hidden">
+            <div class="liveview-section-header">
+              <span class="liveview-section-icon">💻</span>
+              <span class="liveview-section-title">Code Being Built</span>
+              <span id="liveview-code-stats" class="liveview-code-stats"></span>
+            </div>
+            <pre id="liveview-code-content" class="liveview-content liveview-code-content"></pre>
+          </div>
+          <div id="liveview-placeholder" class="placeholder">
+            <span class="placeholder-icon">👁️</span>
+            <p>Generate or refine a game to see the AI's thinking and code building in real-time.</p>
+          </div>
         </div>
       </section>
 
