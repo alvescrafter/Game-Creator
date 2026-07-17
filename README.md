@@ -51,11 +51,11 @@ API keys are stored only in your browser's localStorage — never sent anywhere 
 - **File browser panel** (multi-file mode) — list generated files and view their source code
 - **Refine bar** — incrementally tweak the game without regenerating from scratch (works in both modes)
 - **Prompt preview** — see and copy the assembled prompt before generating
-- **History** (up to 50 saved games, with backward compatibility for older single-file entries) and **Templates** for reusable configurations
+- **History** (up to 50 saved games, with backward compatibility for older single-file entries) for past generations
 - **Download** finished games as a single `.html` file (single-file mode) or `.zip` archive (multi-file mode)
 - **Fullscreen** sandbox and **refresh** controls
 - **Dark/light theme** toggle (follows system)
-- **Keyboard shortcuts** — `Ctrl+Enter` generate, `Ctrl+B` sidebar, `Ctrl+H` history, `Ctrl+T` templates, `Ctrl+,` settings
+- **Keyboard shortcuts** — `Ctrl+Enter` generate, `Ctrl+B` sidebar, `Ctrl+H` history, `Ctrl+,` settings
 
 ---
 

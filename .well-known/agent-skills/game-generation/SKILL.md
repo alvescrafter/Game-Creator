@@ -66,7 +66,7 @@ After generating, you can refine the game with natural language:
 - **Tech stack**: Vanilla HTML, CSS, JavaScript — no frameworks, no build tools
 - **Architecture**: Single-page application, client-side only
 - **API calls**: Browser connects directly to the AI provider
-- **State**: localStorage (history up to 50 games, templates, settings)
+- **State**: localStorage (history up to 50 games, settings)
 - **Output**: Self-contained HTML file with inline CSS and JS
 
 ## See Also

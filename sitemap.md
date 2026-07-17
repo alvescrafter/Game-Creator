@@ -30,7 +30,7 @@
 - 12 game mechanics: Double Jump, Inventory, Health Bar, Gravity, Permadeath, Leveling, Crafting, Stealth, Procedural Generation, Physics, Dialogue, Collectibles
 - 8 art styles: Pixel Art, Minimalist Vector, ASCII, Low-Poly 2D, Hand-drawn, Flat Design, Retro CRT, Neon Glow
 - 5 AI providers: OpenAI, Gemini, Claude, Ollama, LM Studio
-- Refine bar, history (50 games), templates, download, fullscreen, dark/light theme
+- Refine bar, history (50 games), download, fullscreen, dark/light theme
 
 ## Related Sites
 - [Landing Page](https://gamecreatorai.netlify.app/landing/) — Project landing page

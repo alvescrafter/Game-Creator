@@ -73,7 +73,6 @@
           "Streaming game generation",
           "Refine bar for incremental tweaks",
           "Game history (up to 50 saved games)",
-          "Template system for reusable configurations",
           "Download games as single HTML files",
           "Fullscreen sandbox mode",
           "Dark and light theme"
@@ -262,7 +261,6 @@
       </a>
       <span class="donate-subtitle">If you've enjoyed creating with us, please give a donation to help keep the site up.</span>
       <button id="btn-history" class="icon-btn" title="History (Ctrl+H)">📜</button>
-      <button id="btn-templates" class="icon-btn" title="Templates (Ctrl+T)">📋</button>
       <button id="btn-settings" class="btn btn-api" title="Connect Your AI (Ctrl+,)">🤖 Connect Your AI</button>
     </div>
   </header>
@@ -798,27 +796,6 @@
       <div class="modal-footer">
         <button id="btn-clear-history" class="btn btn-danger">🗑️ Clear All</button>
         <button class="btn btn-secondary" data-close="modal-history">Close</button>
-      </div>
-    </div>
-  </dialog>
-
-  <!-- Templates Modal -->
-  <dialog id="modal-templates" class="modal">
-    <div class="modal-content modal-wide">
-      <div class="modal-header">
-        <h2>📋 Template Library</h2>
-        <button class="modal-close" data-close="modal-templates">✕</button>
-      </div>
-      <div class="modal-body">
-        <div class="template-actions">
-          <button id="btn-save-template" class="btn btn-primary">💾 Save Current as Template</button>
-        </div>
-        <div id="template-list" class="template-list">
-          <p class="placeholder">No saved templates yet. Configure your modules and save!</p>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" data-close="modal-templates">Close</button>
       </div>
     </div>
   </dialog>

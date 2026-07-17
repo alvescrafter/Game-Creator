@@ -11,7 +11,6 @@
     STATE: 'gameCreator.state.v1',
     API: 'gameCreator.api.v1',
     HISTORY: 'gameCreator.history.v1',
-    TEMPLATES: 'gameCreator.templates.v1',
   };
 
   const MAX_HISTORY = 50;
@@ -423,16 +422,6 @@
     if (list.length > MAX_HISTORY) list = list.slice(0, MAX_HISTORY);
     try { localStorage.setItem(KEYS.HISTORY, JSON.stringify(list)); }
     catch (e) { console.warn('Failed to save history:', e); }
-  }
-
-  function readTemplates() {
-    try { return JSON.parse(localStorage.getItem(KEYS.TEMPLATES) || '[]'); }
-    catch { return []; }
-  }
-
-  function writeTemplates(list) {
-    try { localStorage.setItem(KEYS.TEMPLATES, JSON.stringify(list)); }
-    catch (e) { console.warn('Failed to save templates:', e); }
   }
 
   // ═══════════════════════════════════════════════
@@ -2206,78 +2195,6 @@
   }
 
   // ═══════════════════════════════════════════════
-  // TEMPLATES
-  // ═══════════════════════════════════════════════
-
-  function saveTemplate() {
-    const name = prompt('Template name:');
-    if (!name) return;
-
-    const list = readTemplates();
-    list.unshift({
-      id: uid(),
-      name,
-      config: deepClone(state),
-      moduleEnabled: deepClone(moduleEnabled),
-      timestamp: Date.now(),
-    });
-    writeTemplates(list);
-    renderTemplates();
-    showToast('Template saved: ' + name, 'success');
-  }
-
-  function renderTemplates() {
-    const list = readTemplates();
-    const container = document.getElementById('template-list');
-
-    if (list.length === 0) {
-      container.innerHTML = '<p class="placeholder">No saved templates yet. Configure your modules and save!</p>';
-      return;
-    }
-
-    container.innerHTML = list.map(item => `
-      <div class="template-item" data-id="${item.id}">
-        <div class="template-info">
-          <div class="template-title">${escapeHtml(item.name)}</div>
-          <div class="template-meta">${formatTimestamp(item.timestamp)}</div>
-        </div>
-        <div class="template-actions-bar">
-          <button class="btn btn-sm" onclick="window.__loadTemplate('${item.id}')" title="Load template">📂 Load</button>
-          <button class="btn btn-sm btn-danger" onclick="window.__deleteTemplate('${item.id}')" title="Delete">🗑️</button>
-        </div>
-      </div>
-    `).join('');
-  }
-
-  function loadTemplate(id) {
-    const list = readTemplates();
-    const item = list.find(t => t.id === id);
-    if (!item) {
-      showToast('Template not found', 'error');
-      return;
-    }
-
-    state = { ...deepClone(DEFAULT_STATE), ...item.config };
-    moduleEnabled = { ...deepClone(DEFAULT_MODULE_ENABLED), ...item.moduleEnabled };
-    normalizeStateForReliability();
-
-    syncUIFromState();
-    updatePromptPreview();
-    saveState();
-
-    closeModal('modal-templates');
-    showToast('Template loaded: ' + item.name, 'success');
-  }
-
-  function deleteTemplate(id) {
-    let list = readTemplates();
-    list = list.filter(t => t.id !== id);
-    writeTemplates(list);
-    renderTemplates();
-    showToast('Template deleted', 'info');
-  }
-
-  // ═══════════════════════════════════════════════
   // DOWNLOAD
   // ═══════════════════════════════════════════════
 
@@ -2868,15 +2785,6 @@
     // ── Clear history ──
     document.getElementById('btn-clear-history').addEventListener('click', clearHistory);
 
-    // ── Templates modal ──
-    document.getElementById('btn-templates').addEventListener('click', () => {
-      renderTemplates();
-      openModal('modal-templates');
-    });
-
-    // ── Save template ──
-    document.getElementById('btn-save-template').addEventListener('click', saveTemplate);
-
     // ── Download HTML / ZIP ──
     document.getElementById('btn-download').addEventListener('click', downloadGame);
 
@@ -3006,12 +2914,6 @@
         renderHistory();
         openModal('modal-history');
       }
-      // Ctrl+T: Templates
-      if (e.ctrlKey && e.key === 't') {
-        e.preventDefault();
-        renderTemplates();
-        openModal('modal-templates');
-      }
       // Ctrl+,: Settings
       if (e.ctrlKey && e.key === ',') {
         e.preventDefault();
@@ -3028,13 +2930,11 @@
   }
 
   // ═══════════════════════════════════════════════
-  // GLOBAL EXPOSES (for inline onclick in history/templates)
+  // GLOBAL EXPOSES (for inline onclick in history)
   // ═══════════════════════════════════════════════
 
   window.__loadHistory = loadHistoryItem;
   window.__deleteHistory = deleteHistoryItem;
-  window.__loadTemplate = loadTemplate;
-  window.__deleteTemplate = deleteTemplate;
 
   // ═══════════════════════════════════════════════
   // RESTORE PROMPT LOCK UI STATE

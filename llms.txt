@@ -27,11 +27,10 @@
 - Refine bar for incremental tweaks without full regeneration (works in both single-file and multi-file modes)
 - Prompt preview with copy button
 - Game history (up to 50 saved games in localStorage, with backward compatibility for older single-file entries)
-- Template system for reusable configurations
 - Download games as single self-contained .html files (single-file mode) or .zip archives (multi-file mode)
 - Fullscreen sandbox mode
 - Dark and light theme (follows system preference)
-- Keyboard shortcuts: Ctrl+Enter (generate), Ctrl+B (sidebar), Ctrl+H (history), Ctrl+T (templates), Ctrl+, (settings)
+- Keyboard shortcuts: Ctrl+Enter (generate), Ctrl+B (sidebar), Ctrl+H (history), Ctrl+, (settings)
 
 ## AI Providers
 | Provider | API Key Required | Base URL |

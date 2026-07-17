@@ -107,7 +107,6 @@ After generating, use the **Refine bar** at the bottom of the sandbox:
 | `Ctrl + Enter` | Generate Game |
 | `Ctrl + B` | Toggle Sidebar |
 | `Ctrl + H` | Open History |
-| `Ctrl + T` | Open Templates |
 | `Ctrl + ,` | Open API Settings |
 | `Escape` | Close modals / Exit fullscreen |
 
@@ -121,13 +120,7 @@ After generating, use the **Refine bar** at the bottom of the sandbox:
 - **Delete** individual entries or clear all history
 - Stores up to 50 entries in your browser's localStorage
 
-### 📋 Templates
-- Click **📋 Templates** to manage saved configurations
-- **Save Current as Template** — saves your current sidebar settings as a reusable preset
-- **Load** a template to instantly configure all modules
-- Great for quickly starting new games with similar settings
-
-### 💾 Download
+###  Download
 - **Single-file mode**: Click **💾 Download** in the sandbox toolbar to save the generated game as an `.html` file — fully self-contained, opens in any browser
 - **Multi-file mode**: Click **💾 Download ZIP** to save all generated files (index.html, style.css, game.js) as a `.zip` archive (uses JSZip, loaded dynamically from CDN)
 
@@ -178,9 +171,8 @@ After generating, use the **Refine bar** at the bottom of the sandbox:
 5. **Higher temperature for creative games** — Set to 0.8–1.2 for wild, creative results
 6. **Use the Game Menu module** — Every game gets a Title Screen, Pause Menu (ESC), and Game Over screen by default. Customise these in the 🕹️ Game Menu & Controls module.
 7. **Use the Refine bar** — Instead of regenerating from scratch, refine incrementally
-8. **Save templates** — If you find a configuration that works well, save it as a template
-9. **Check Prompt Preview** — Review the assembled prompt before generating to make sure it captures your intent
-10. **Conflict warnings** — The app will warn you about incompatible settings (e.g. Three.js + Pixel Art, or No Menu + game actions)
+8. **Check Prompt Preview** — Review the assembled prompt before generating to make sure it captures your intent
+9. **Conflict warnings** — The app will warn you about incompatible settings (e.g. Three.js + Pixel Art, or No Menu + game actions)
 
 ---
 

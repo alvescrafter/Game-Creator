@@ -28,7 +28,7 @@ This is a **single-page application** with no backend server. All logic runs in 
 |------|---------|
 | `index.html` | App layout, HTML structure, SEO meta tags, JSON-LD structured data |
 | `style.css` | All styling and theming (light/dark themes, responsive layout, animations) |
-| `app.js` | Core logic — state management, prompt assembly, API calls, UI event handlers, history, templates |
+| `app.js` | Core logic — state management, prompt assembly, API calls, UI event handlers, history |
 | `pinokio.json` | Pinokio launcher metadata (for running in Pinokio desktop app) |
 | `README.md` | Project overview, supported providers, feature list, programmatic usage |
 | `HOW_TO_USE.md` | Full user guide — module reference, keyboard shortcuts, troubleshooting |
@@ -79,8 +79,6 @@ python -m http.server 8000
 | `liveViewStart()` / `liveViewAppendChunk()` / `liveViewEnd()` | Manages the Live View streaming panel — shows LLM thinking and code building in real-time |
 | `saveToHistory()` | Saves the current game + configuration to localStorage history (with backward compatibility for older single-file entries) |
 | `loadFromHistory()` | Restores a previously saved game and configuration |
-| `saveTemplate()` | Saves current sidebar configuration as a reusable template |
-| `loadTemplate()` | Loads a saved template into the sidebar |
 
 ## State Management
 
@@ -90,7 +88,6 @@ All state is persisted in `localStorage`:
 |-----|---------|
 | `gameCreator.api.v1` | API settings (provider, key, model, temperature, baseUrl) |
 | `gameCreator.history.v1` | Game history (up to 50 entries) |
-| `gameCreator.templates.v1` | Saved configuration templates |
 | `gameCreator.config.v1` | Current sidebar configuration state (includes outputMode: 'single' or 'multi') |
 
 ## AI Provider Configuration
