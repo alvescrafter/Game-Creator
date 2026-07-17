@@ -41,7 +41,18 @@
               "text/html": {
                 "schema": {
                   "type": "string",
-                  "description": "A complete HTML5 game with inline CSS and JavaScript, including Title Screen, Pause Menu (ESC), and Game Over screen."
+                  "description": "A complete HTML5 game with inline CSS and JavaScript, including Title Screen, Pause Menu (ESC), and Game Over screen. (Single-file mode.)"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "Multi-file mode response: a JSON object with separate game files.",
+                  "properties": {
+                    "index.html": { "type": "string", "description": "The game's HTML structure." },
+                    "style.css": { "type": "string", "description": "The game's CSS styling." },
+                    "game.js": { "type": "string", "description": "The game's JavaScript logic." }
+                  }
                 }
               }
             }
@@ -194,7 +205,13 @@
           "single_file_mode": {
             "type": "boolean",
             "default": true,
-            "description": "When true, the AI delivers everything in a single HTML file."
+            "description": "Deprecated — use output_mode. When true, the AI delivers everything in a single HTML file."
+          },
+          "output_mode": {
+            "type": "string",
+            "enum": ["single", "multi"],
+            "default": "single",
+            "description": "Output mode: 'single' returns one self-contained HTML file; 'multi' returns a JSON object with separate index.html, style.css, and game.js files. Multi-file mode has no token limit."
           },
           "asset_handling": {
             "type": "string",
@@ -205,7 +222,7 @@
             "minimum": 256,
             "maximum": 32768,
             "default": 50000,
-            "description": "API response token limit. Higher = more complex games but higher cost."
+            "description": "API response token limit (single-file mode only). Multi-file mode has no token limit. Higher = more complex games but higher cost."
           },
           "ai_provider": {
             "type": "string",

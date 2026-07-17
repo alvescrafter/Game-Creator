@@ -66,12 +66,18 @@ python -m http.server 8000
 
 | Function | Purpose |
 |----------|---------|
-| `assemblePrompt()` | Compiles sidebar configuration into system + user prompts for the AI |
-| `generateGame()` | Sends the assembled prompt to the configured AI provider and streams the response |
-| `refineGame()` | Sends a refinement request (incremental tweak) with the current game code |
-| `extractGameCode()` | Extracts HTML game code from the AI response |
-| `renderGame()` | Renders the extracted game in the iframe sandbox |
-| `saveToHistory()` | Saves the current game + configuration to localStorage history |
+| `assemblePrompt()` | Compiles sidebar configuration into system + user prompts for the AI (adapts for single-file vs multi-file output mode) |
+| `generateGame()` | Sends the assembled prompt to the configured AI provider and streams the response via Live View |
+| `callLLMStream()` | Async generator that streams chunks from the AI provider (all 5 providers) for real-time Live View display |
+| `refineGame()` | Sends a refinement request (incremental tweak) with the current game code (works in both single-file and multi-file modes) |
+| `extractGameCode()` | Extracts HTML game code from the AI response (single-file mode) |
+| `parseMultiFileResponse()` | Parses the JSON multi-file response into separate index.html, style.css, game.js files |
+| `renderGame()` | Renders the extracted game in the iframe sandbox (single-file mode) |
+| `renderFileList()` | Renders the file browser panel with generated files and code viewer (multi-file mode) |
+| `downloadZIP()` | Downloads all multi-file generated files as a .zip archive via JSZip (loaded dynamically from CDN) |
+| `loadJSZip()` | Dynamically loads the JSZip library from CDN when first needed |
+| `liveViewStart()` / `liveViewAppendChunk()` / `liveViewEnd()` | Manages the Live View streaming panel — shows LLM thinking and code building in real-time |
+| `saveToHistory()` | Saves the current game + configuration to localStorage history (with backward compatibility for older single-file entries) |
 | `loadFromHistory()` | Restores a previously saved game and configuration |
 | `saveTemplate()` | Saves current sidebar configuration as a reusable template |
 | `loadTemplate()` | Loads a saved template into the sidebar |
@@ -85,7 +91,7 @@ All state is persisted in `localStorage`:
 | `gameCreator.api.v1` | API settings (provider, key, model, temperature, baseUrl) |
 | `gameCreator.history.v1` | Game history (up to 50 entries) |
 | `gameCreator.templates.v1` | Saved configuration templates |
-| `gameCreator.config.v1` | Current sidebar configuration state |
+| `gameCreator.config.v1` | Current sidebar configuration state (includes outputMode: 'single' or 'multi') |
 
 ## AI Provider Configuration
 
@@ -106,6 +112,9 @@ The app supports 5 providers, all using OpenAI-compatible chat completion endpoi
 - **No dependencies**: No external libraries (except CDN-loaded fonts). Everything is self-contained.
 - **API keys in localStorage**: Keys are stored in the browser and sent only to the chosen AI provider.
 - **Single-file game output**: Generated games are self-contained HTML files with inline CSS and JS.
+- **Multi-file game output**: Generated games are returned as JSON with separate index.html, style.css, and game.js files, downloadable as a .zip via JSZip (CDN-loaded dynamically).
+- **Live View streaming**: During generation, a Live View panel shows the LLM's thinking and code building in real-time (replaces the old loading overlay).
+- **Multi-file mode has no token limit**: Single-file mode caps at 100K tokens; multi-file mode lets the AI use as much context as it needs.
 - **Mandatory game structure**: Every generated game includes a Title Screen, Pause Menu (ESC), and Game Over screen.
 
 ## Sync Maintenance

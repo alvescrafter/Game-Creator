@@ -37,7 +37,8 @@ Use the **left sidebar** to define your game across 5 modules:
 ### 3. Generate Your Game
 - Click the **⚡ Generate Game** button in the header (or press `Ctrl + Enter`)
 - The app assembles your configuration into a detailed prompt and sends it to the AI
-- Once generated, the game appears in the **🎮 Game Sandbox** tab on the right
+- During generation, the **Live View** panel shows the LLM's thinking and code building in real-time (replaces the old loading overlay)
+- Once generated, the game appears in the **🎮 Game Sandbox** tab on the right (single-file mode) or the **📁 Files** tab (multi-file mode)
 - The assembled prompt is visible in the **📝 Prompt Preview** tab
 
 ### 4. Refine Your Game
@@ -87,9 +88,9 @@ After generating, use the **Refine bar** at the bottom of the sandbox:
 | Field | Description |
 |-------|-------------|
 | **Framework** | Vanilla JS/Canvas, Phaser.js, Three.js, Kaboom.js, PixiJS, Matter.js |
-| **Single File Mode** | Toggle on/off — when on, the AI delivers everything in one HTML file |
+| **Output Mode** | Single File (one .html) or Multi-File (index.html + style.css + game.js) |
 | **Asset Handling** | Free text — how to handle assets (e.g. "Use placeholder colored rectangles") |
-| **Max Tokens** | API response limit (256–32768). Higher = more complex games, but costs more |
+| **Max Tokens** | API response limit (256–32768). Single-file mode only — multi-file mode has no token limit. |
 
 ### 🔊 Audio & Soundscape
 | Field | Description |
@@ -127,8 +128,19 @@ After generating, use the **Refine bar** at the bottom of the sandbox:
 - Great for quickly starting new games with similar settings
 
 ### 💾 Download
-- Click **💾 Download** in the sandbox toolbar to save the generated game as an `.html` file
-- The file is fully self-contained and can be opened in any browser
+- **Single-file mode**: Click **💾 Download** in the sandbox toolbar to save the generated game as an `.html` file — fully self-contained, opens in any browser
+- **Multi-file mode**: Click **💾 Download ZIP** to save all generated files (index.html, style.css, game.js) as a `.zip` archive (uses JSZip, loaded dynamically from CDN)
+
+### 📁 Files Panel (Multi-File Mode)
+- When using Multi-File output mode, a **📁 Files** tab appears next to the Game Sandbox
+- Lists all generated files (index.html, style.css, game.js)
+- Click any file to view its source code in the built-in code viewer
+- Use **💾 Download ZIP** to download all files as a single archive
+
+### 📺 Live View
+- During generation, the **📺 Live View** panel shows the LLM's output streaming in real-time
+- Displays the AI's thinking (prose) and code (in code blocks) as they are generated
+- Replaces the old loading overlay — you can watch the game being built live
 
 ### ⛶ Fullscreen
 - Click **⛶ Fullscreen** to view the game in full-screen mode
@@ -192,7 +204,7 @@ After generating, use the **Refine bar** at the bottom of the sandbox:
 |------|---------|
 | `index.html` | App layout and structure |
 | `style.css` | All styling and theming |
-| `app.js` | Core logic, API calls, state management |
+| `app.js` | Core logic, API calls, state management, Live View streaming, multi-file parsing, ZIP download |
 
 ---
 

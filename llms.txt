@@ -19,12 +19,16 @@
 - Audio and soundscape settings (music mood, SFX requirements)
 - 5 configurable sidebar modules, each independently toggleable
 - 5 AI providers: OpenAI, Gemini, Claude, Ollama (local), LM Studio (local)
-- Streaming game generation
-- Refine bar for incremental tweaks without full regeneration
+- **Output Mode toggle**: Single File (one self-contained .html) or Multi-File (index.html, style.css, game.js as separate files)
+- **Live View panel**: real-time streaming display showing the LLM's thinking and code as it builds — replaces the loading overlay during generation
+- **Streaming game generation** (callLLMStream) across all 5 providers
+- **ZIP download** (multi-file mode): download all generated files as a .zip via JSZip (loaded dynamically from CDN)
+- **File browser panel** (multi-file mode): list generated files and view their source code
+- Refine bar for incremental tweaks without full regeneration (works in both single-file and multi-file modes)
 - Prompt preview with copy button
-- Game history (up to 50 saved games in localStorage)
+- Game history (up to 50 saved games in localStorage, with backward compatibility for older single-file entries)
 - Template system for reusable configurations
-- Download games as single self-contained .html files
+- Download games as single self-contained .html files (single-file mode) or .zip archives (multi-file mode)
 - Fullscreen sandbox mode
 - Dark and light theme (follows system preference)
 - Keyboard shortcuts: Ctrl+Enter (generate), Ctrl+B (sidebar), Ctrl+H (history), Ctrl+T (templates), Ctrl+, (settings)
@@ -43,7 +47,8 @@
 - Architecture: Single-page application, client-side only, no backend server
 - API calls: Browser connects directly to the AI provider — no proxy, no server-side relay
 - API key storage: localStorage only (key: `gameCreator.api.v1`), never sent anywhere except the chosen provider
-- Game output: Single self-contained HTML file with inline CSS and JavaScript
+- Game output: Single self-contained HTML file (single-file mode) or separate index.html + style.css + game.js (multi-file mode)
+- Multi-file mode has no token limit (lets the AI use as much context as it needs); single-file mode caps at 100K tokens
 - Mandatory game structure: Every generated game includes a Title Screen, Pause Menu (ESC), and Game Over screen
 - Frameworks supported in generated games: Vanilla JS/Canvas, Phaser.js, Three.js, Kaboom.js, PixiJS, Matter.js
 - Pinokio launcher support via pinokio.json
